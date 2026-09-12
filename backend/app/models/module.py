@@ -1,0 +1,20 @@
+from datetime import datetime
+
+from sqlalchemy import Boolean, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.database import Base
+from app.core.types import UTCDateTime
+from app.models.rbac import utc_now
+
+
+class SystemModuleSetting(Base):
+    """保存系统菜单模块的显示开关。"""
+
+    __tablename__ = "system_module_settings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_by: Mapped[str] = mapped_column(String(150), default="")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)

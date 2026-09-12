@@ -1,0 +1,22 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="botBg" x1="18" y1="12" x2="108" y2="114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE" />
+      <stop offset="1" stop-color="#DBEAFE" />
+    </linearGradient>
+    <linearGradient id="botFace" x1="36" y1="30" x2="91" y2="94" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9" />
+      <stop offset="1" stop-color="#2563EB" />
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="96" height="96" rx="30" fill="url(#botBg)"/>
+  <rect x="31" y="28" width="66" height="72" rx="24" fill="url(#botFace)"/>
+  <rect x="42" y="44" width="44" height="24" rx="12" fill="#EFF6FF"/>
+  <circle cx="54" cy="56" r="6" fill="#0EA5E9"/>
+  <circle cx="74" cy="56" r="6" fill="#0EA5E9"/>
+  <path d="M48 78C51.5 83.5 58 87 64 87C70 87 76.5 83.5 80 78" stroke="#E0F2FE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M64 18V31" stroke="#38BDF8" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="64" cy="12" r="8" fill="#38BDF8"/>
+  <circle cx="26" cy="54" r="7" fill="#7DD3FC"/>
+  <circle cx="102" cy="54" r="7" fill="#7DD3FC"/>
+</svg>
