@@ -16,21 +16,18 @@ Viewer = Annotated[User, Depends(require_permissions("rbac.group.view"))]
 Manager = Annotated[User, Depends(require_permissions("rbac.group.manage"))]
 
 
-@router.get("/", response_model=list[GroupResponse])
+@router.get("/", response_model=list[GroupResponse], description="返回用户组数组及角色、成员映射。")
 async def groups_list(session: SessionDependency, actor: Viewer, search: str = "") -> list[GroupResponse]:
-    """GET /api/groups/：返回用户组数组及角色、成员映射。"""
     return [serialize_group(group) for group in await list_groups(session, search.strip())]
 
 
-@router.get("/{group_id}/", response_model=GroupResponse)
+@router.get("/{group_id}/", response_model=GroupResponse, description="读取指定用户组的角色和成员。")
 async def group_detail(group_id: int, session: SessionDependency, actor: Viewer) -> GroupResponse:
-    """GET /api/groups/{id}/：读取指定用户组的角色和成员。"""
     return serialize_group(await get_group(session, group_id))
 
 
-@router.post("/", response_model=GroupResponse, status_code=201)
+@router.post("/", response_model=GroupResponse, status_code=201, description="创建用户组、角色和成员关系并记录审计。")
 async def group_create(payload: GroupCreate, request: Request, session: SessionDependency, actor: Manager) -> GroupResponse:
-    """POST /api/groups/：创建用户组、角色和成员关系并记录审计。"""
     data = payload.model_dump(exclude_unset=True)
     group = await mutations.create_group(session, actor, data)
     result = serialize_group(group)
@@ -38,9 +35,8 @@ async def group_create(payload: GroupCreate, request: Request, session: SessionD
     return result
 
 
-@router.patch("/{group_id}/", response_model=GroupResponse)
+@router.patch("/{group_id}/", response_model=GroupResponse, description="部分修改用户组并替换显式关系集合。")
 async def group_update(group_id: int, payload: GroupPatch, request: Request, session: SessionDependency, actor: Manager) -> GroupResponse:
-    """PATCH /api/groups/{id}/：部分修改用户组并替换显式关系集合。"""
     data = payload.model_dump(exclude_unset=True)
     group = await mutations.update_group(session, actor, group_id, data)
     result = serialize_group(group)
@@ -48,9 +44,8 @@ async def group_update(group_id: int, payload: GroupPatch, request: Request, ses
     return result
 
 
-@router.delete("/{group_id}/", status_code=204)
+@router.delete("/{group_id}/", status_code=204, description="删除用户组并解除角色和成员绑定。")
 async def group_delete(group_id: int, request: Request, session: SessionDependency, actor: Manager) -> Response:
-    """DELETE /api/groups/{id}/：删除用户组并解除角色和成员绑定。"""
     await mutations.delete_group(session, actor, group_id)
     await audit_and_commit(session, request, actor, action="delete_group", resource_type="group", resource_id=group_id, fields=[])
     return Response(status_code=204)

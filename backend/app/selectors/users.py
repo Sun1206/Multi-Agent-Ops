@@ -1,4 +1,4 @@
-"""负责账号详情及稳定的分页查询，不执行写入。"""
+# 负责账号详情及稳定的分页查询，不执行写入。
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
@@ -9,7 +9,6 @@ from app.selectors.accounts import user_load_options
 
 
 async def get_user(session: AsyncSession, user_id: int, *, for_update: bool = False) -> User:
-    """按 ID 预加载用户关系；不存在时返回统一 404。"""
     statement = select(User).where(User.id == user_id).options(*user_load_options()).execution_options(populate_existing=True)
     if for_update:
         statement = statement.with_for_update()
@@ -20,7 +19,6 @@ async def get_user(session: AsyncSession, user_id: int, *, for_update: bool = Fa
 
 
 async def list_users(session: AsyncSession, *, page: int, page_size: int, search: str) -> tuple[int, list[User]]:
-    """按用户名/邮箱搜索并以 ID 分页，避免跨页重复和不稳定排序。"""
     predicates = []
     if search:
         predicates.append(or_(User.username.icontains(search), User.email.icontains(search)))

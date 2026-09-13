@@ -7,7 +7,6 @@ from app.registry import BUILTIN_ROLES, PERMISSION_DEFINITIONS
 
 
 async def sync_rbac(session: AsyncSession) -> None:
-    """幂等同步内置权限和角色，并刷新内置角色权限绑定但不自行提交。"""
     permissions = {
         item.code: item for item in (await session.scalars(select(PermissionDefinition))).all()
     }

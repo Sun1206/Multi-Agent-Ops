@@ -1,4 +1,4 @@
-"""在不连接数据库的情况下生成不可变 MySQL 初始迁移快照。"""
+# 在不连接数据库的情况下生成不可变 MySQL 初始迁移快照。
 
 from pathlib import Path
 
@@ -13,7 +13,6 @@ OUTPUT = Path(__file__).resolve().parents[1] / "alembic" / "versions" / "0001_fa
 
 
 def render_migration() -> str:
-    """把当前元数据编译为固定的建表、索引和逆序删表 SQL。"""
     dialect = mysql.dialect()
     tables = list(Base.metadata.sorted_tables)
     upgrade_sql: list[str] = []
@@ -56,7 +55,6 @@ def downgrade() -> None:
 
 
 def main() -> None:
-    """生成初始迁移文件；应用到数据库后禁止再次覆盖该历史版本。"""
     OUTPUT.write_text(render_migration(), encoding="utf-8", newline="\n")
     print(f"generated immutable migration {OUTPUT}")
 

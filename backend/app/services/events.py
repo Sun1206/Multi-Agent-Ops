@@ -24,18 +24,15 @@ SENSITIVE_KEYS = {
 
 
 def normalize_key(key: object) -> str:
-    """统一敏感字段名格式，忽略大小写、横线和下划线。"""
     return str(key).lower().replace("-", "").replace("_", "")
 
 
 def is_sensitive_key(key: object) -> bool:
-    """判断字段名是否包含需要完整遮蔽的凭据语义。"""
     normalized = normalize_key(key)
     return any(item in normalized for item in SENSITIVE_KEYS)
 
 
 def sanitize_metadata(value: Any) -> Any:
-    """递归清洗审计元数据中的密码、令牌、证书和访问凭据。"""
     if isinstance(value, Mapping):
         return {
             key: "***" if is_sensitive_key(key) else sanitize_metadata(item)
@@ -61,11 +58,14 @@ async def record_event(
     resource_type: str,
     resource_id: str,
     metadata: dict[str, object],
+    category: str = 'system',
+    severity: str = 'info',
+    module: str = 'rbac',
 ) -> EventRecord:
-    """把已脱敏审计事件加入调用方事务；失败时业务写入应一并回滚。"""
     event = EventRecord(
-        module="rbac",
-        category="system",
+        module=module,
+        category=category,
+        severity=severity,
         action=action,
         title=title,
         actor_username=actor.username,

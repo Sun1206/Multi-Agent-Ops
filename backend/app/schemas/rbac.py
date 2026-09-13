@@ -1,4 +1,4 @@
-"""定义用户管理页面的权限、角色、用户组和分页输出。"""
+# 定义用户管理页面的权限、角色、用户组和分页输出。
 
 from datetime import datetime
 
@@ -10,9 +10,8 @@ from app.schemas.auth import RoleSummary, UserResponse
 
 
 class PermissionResponse(BaseModel):
-    """输出稳定的权限字典字段，不包含内部关系。"""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_schema_extra={'description': '输出稳定的权限字典字段，不包含内部关系。'})
     id: int
     code: str
     name: str
@@ -23,7 +22,7 @@ class PermissionResponse(BaseModel):
 
 
 class RoleResponse(BaseModel):
-    """输出角色、权限集合及关联数量，供角色编辑表单使用。"""
+    model_config = {'json_schema_extra': {'description': "输出角色、权限集合及关联数量，供角色编辑表单使用。"}}
 
     id: int
     code: str
@@ -38,16 +37,15 @@ class RoleResponse(BaseModel):
 
 
 class UserLiteResponse(BaseModel):
-    """输出用户组成员选择和展示所需的精简账号信息。"""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_schema_extra={'description': '输出用户组成员选择和展示所需的精简账号信息。'})
     id: int
     username: str
     display_name: str
 
 
 class GroupResponse(BaseModel):
-    """输出用户组的角色和成员绑定关系及数量。"""
+    model_config = {'json_schema_extra': {'description': "输出用户组的角色和成员绑定关系及数量。"}}
 
     id: int
     code: str
@@ -63,7 +61,7 @@ class GroupResponse(BaseModel):
 
 
 class UserPageResponse(BaseModel):
-    """保留前端使用的 count/results 和前后页链接契约。"""
+    model_config = {'json_schema_extra': {'description': "保留前端使用的 count/results 和前后页链接契约。"}}
 
     count: int
     next: str | None
@@ -76,19 +74,17 @@ Identity = Annotated[str, Field(min_length=1, max_length=64)]
 
 
 class MutationInput(BaseModel):
-    """禁止客户端注入只读字段，并统一修剪非密码的身份字段。"""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid', json_schema_extra={'description': '禁止客户端注入只读字段，并统一修剪非密码的身份字段。'})
 
     @field_validator("username", "code", "name", mode="before", check_fields=False)
     @classmethod
     def trim_identity(cls, value: object) -> object:
-        """修剪标识首尾空白，后续长度验证拒绝空标识。"""
         return value.strip() if isinstance(value, str) else value
 
 
 class UserPatch(MutationInput):
-    """接收部分用户修改；服务只使用显式提交的字段，缺省值不写入。"""
+    model_config = {'json_schema_extra': {'description': "接收部分用户修改；服务只使用显式提交的字段，缺省值不写入。"}}
 
     username: Annotated[str, Field(min_length=1, max_length=150)] = ""
     email: Annotated[str, Field(max_length=254)] = ""
@@ -103,14 +99,14 @@ class UserPatch(MutationInput):
 
 
 class UserCreate(UserPatch):
-    """创建账号必须提供用户名和至少八位原始密码。"""
+    model_config = {'json_schema_extra': {'description': "创建账号必须提供用户名和至少八位原始密码。"}}
 
     username: Annotated[str, Field(min_length=1, max_length=150)]
     password: Password
 
 
 class RolePatch(MutationInput):
-    """接收角色的部分字段修改及权限集合替换。"""
+    model_config = {'json_schema_extra': {'description': "接收角色的部分字段修改及权限集合替换。"}}
 
     code: Identity = ""
     name: Identity = ""
@@ -119,14 +115,14 @@ class RolePatch(MutationInput):
 
 
 class RoleCreate(RolePatch):
-    """创建角色时必须提供稳定编码及展示名称。"""
+    model_config = {'json_schema_extra': {'description': "创建角色时必须提供稳定编码及展示名称。"}}
 
     code: Identity
     name: Identity
 
 
 class GroupPatch(MutationInput):
-    """接收用户组部分修改及角色/成员集合替换。"""
+    model_config = {'json_schema_extra': {'description': "接收用户组部分修改及角色/成员集合替换。"}}
 
     code: Identity = ""
     name: Identity = ""
@@ -136,13 +132,13 @@ class GroupPatch(MutationInput):
 
 
 class GroupCreate(GroupPatch):
-    """创建用户组时必须提供编码及展示名称。"""
+    model_config = {'json_schema_extra': {'description': "创建用户组时必须提供编码及展示名称。"}}
 
     code: Identity
     name: Identity
 
 
 class PasswordReset(MutationInput):
-    """接收密码重置请求，不允许其他字段混入。"""
+    model_config = {'json_schema_extra': {'description': "接收密码重置请求，不允许其他字段混入。"}}
 
     password: Password

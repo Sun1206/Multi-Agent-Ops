@@ -9,7 +9,6 @@ from app.schemas.module import ModuleSettingResponse, ModuleToggle
 
 
 class ModuleCatalogItem(TypedDict):
-    """描述固定模块目录中不会由数据库修改的字段。"""
 
     code: str
     title: str
@@ -31,21 +30,18 @@ SYSTEM_MODULE_CATALOG: list[ModuleCatalogItem] = [
 
 
 async def sync_modules(session: AsyncSession) -> None:
-    """补齐固定模块目录，重复执行不会创建重复记录且不自行提交。"""
     existing = {item.code for item in (await session.scalars(select(SystemModuleSetting))).all()}
     session.add_all(SystemModuleSetting(code=item["code"], enabled=True) for item in SYSTEM_MODULE_CATALOG if item["code"] not in existing)
     await session.flush()
 
 
 async def list_module_settings(session: AsyncSession) -> list[ModuleSettingResponse]:
-    """按固定菜单顺序读取完整模块目录和当前开关状态。"""
     await sync_modules(session)
     rows = {item.code: item for item in (await session.scalars(select(SystemModuleSetting))).all()}
     return [ModuleSettingResponse(**catalog, enabled=rows[catalog["code"]].enabled, updated_by=rows[catalog["code"]].updated_by, updated_at=rows[catalog["code"]].updated_at) for catalog in SYSTEM_MODULE_CATALOG]
 
 
 async def update_module_settings(session: AsyncSession, updates: list[ModuleToggle], actor: User) -> list[ModuleSettingResponse]:
-    """锁定并更新可选模块，强制必选模块启用；调用方统一提交和审计。"""
     catalog = {item["code"]: item for item in SYSTEM_MODULE_CATALOG}
     unknown = sorted({item.code for item in updates} - set(catalog))
     if unknown:

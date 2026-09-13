@@ -16,7 +16,6 @@ SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 
 @dataclass(frozen=True)
 class AuthContext:
-    """携带已认证用户和仅用于当前请求撤销的原始令牌。"""
 
     user: User
     raw_token: str
@@ -26,7 +25,6 @@ async def get_auth_context(
     session: SessionDependency,
     authorization: Annotated[str | None, Header()] = None,
 ) -> AuthContext:
-    """解析 `Authorization: Token` 并按摘要查询启用账号。"""
     if not authorization:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未提供认证令牌。")
     scheme, separator, raw_token = authorization.partition(" ")
@@ -43,10 +41,8 @@ AuthDependency = Annotated[AuthContext, Depends(get_auth_context)]
 
 
 def require_permissions(*codes: str):
-    """创建权限依赖，要求普通用户具备全部权限而超级管理员直接通过。"""
 
     async def dependency(session: SessionDependency, auth: AuthDependency) -> User:
-        """执行当前接口声明的服务端权限检查。"""
         if not await user_has_permissions(session, auth.user, tuple(codes)):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="当前用户没有执行此操作的权限。")
         return auth.user

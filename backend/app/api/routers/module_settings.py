@@ -12,9 +12,8 @@ from app.services.modules import list_module_settings, update_module_settings
 router = APIRouter(prefix="/api/module-settings", tags=["模块设置"])
 
 
-@router.get("/", response_model=list[ModuleSettingResponse])
+@router.get("/", response_model=list[ModuleSettingResponse], description="认证用户读取完整模块显示配置。")
 async def get_modules(session: SessionDependency, auth: AuthDependency) -> list[ModuleSettingResponse]:
-    """GET /api/module-settings/：认证用户读取完整模块显示配置。"""
     return await list_module_settings(session)
 
 
@@ -24,7 +23,6 @@ async def write_modules(
     session: SessionDependency,
     actor: User,
 ) -> ModuleUpdateResponse:
-    """更新模块并在同一事务写入脱敏审计事件。"""
     updates = normalize_module_payload(payload)
     items = await update_module_settings(session, updates, actor)
     correlation_id = getattr(request.state, "correlation_id", "")
@@ -46,23 +44,21 @@ async def write_modules(
     return ModuleUpdateResponse(data=items)
 
 
-@router.put("/", response_model=ModuleUpdateResponse)
+@router.put("/", response_model=ModuleUpdateResponse, description="有管理权限用户整体更新模块开关。")
 async def put_modules(
     request: Request,
     payload: list[ModuleToggle] | ModuleSettingsBody,
     session: SessionDependency,
     actor: Annotated[User, Depends(require_permissions("rbac.module.manage"))],
 ) -> ModuleUpdateResponse:
-    """PUT /api/module-settings/：有管理权限用户整体更新模块开关。"""
     return await write_modules(request, payload, session, actor)
 
 
-@router.patch("/", response_model=ModuleUpdateResponse)
+@router.patch("/", response_model=ModuleUpdateResponse, description="有管理权限用户局部更新模块开关。")
 async def patch_modules(
     request: Request,
     payload: list[ModuleToggle] | ModuleSettingsBody,
     session: SessionDependency,
     actor: Annotated[User, Depends(require_permissions("rbac.module.manage"))],
 ) -> ModuleUpdateResponse:
-    """PATCH /api/module-settings/：有管理权限用户局部更新模块开关。"""
     return await write_modules(request, payload, session, actor)

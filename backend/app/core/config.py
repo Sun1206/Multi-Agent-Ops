@@ -7,7 +7,6 @@ from sqlalchemy import URL
 
 
 class Settings(BaseSettings):
-    """读取运行配置，并阻止测试连接误指向开发数据库。"""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
@@ -26,7 +25,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_test_database(self) -> "Settings":
-        """验证自动化测试只能操作名称以 `_test` 结尾的独立数据库。"""
         if self.database_mode == "test":
             if self.mysql_test_database == self.mysql_database:
                 raise ValueError("测试数据库不能与开发数据库相同")
@@ -36,14 +34,12 @@ class Settings(BaseSettings):
 
     @property
     def active_database(self) -> str:
-        """按运行模式返回当前允许访问的数据库名称。"""
         if self.database_mode == "test":
             return self.mysql_test_database
         return self.mysql_database
 
     @property
     def database_url(self) -> URL:
-        """构造能正确编码特殊字符的 asyncmy 数据库连接地址。"""
         return URL.create(
             "mysql+asyncmy",
             username=self.mysql_user,
@@ -57,5 +53,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """返回进程级缓存配置，测试可清除缓存后重新加载。"""
     return Settings()

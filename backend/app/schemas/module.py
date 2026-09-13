@@ -6,26 +6,25 @@ from app.core.types import ensure_utc
 
 
 class ModuleToggle(BaseModel):
-    """表示一个可选模块的目标启用状态。"""
+    model_config = {'json_schema_extra': {'description': "表示一个可选模块的目标启用状态。"}}
 
     code: str = Field(min_length=1, max_length=64)
     enabled: bool
 
 
 class ModuleSettingsBody(BaseModel):
-    """兼容前端使用 `modules` 包裹列表的更新结构。"""
+    model_config = {'json_schema_extra': {'description': "兼容前端使用 `modules` 包裹列表的更新结构。"}}
 
     modules: list[ModuleToggle]
 
 
 class ModuleSettingsList(RootModel[list[ModuleToggle]]):
-    """兼容前端直接提交模块列表的更新结构。"""
+    model_config = {'json_schema_extra': {'description': "兼容前端直接提交模块列表的更新结构。"}}
 
 
 class ModuleSettingResponse(BaseModel):
-    """输出固定目录信息和数据库中的开关状态。"""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_schema_extra={'description': '输出固定目录信息和数据库中的开关状态。'})
     code: str
     title: str
     description: str
@@ -38,12 +37,11 @@ class ModuleSettingResponse(BaseModel):
     @field_validator("updated_at")
     @classmethod
     def normalize_timestamp(cls, value: datetime) -> datetime:
-        """保证模块更新时间以 UTC 时区输出。"""
         return ensure_utc(value)
 
 
 class ModuleUpdateResponse(BaseModel):
-    """返回模块设置写入结果和更新后的完整目录。"""
+    model_config = {'json_schema_extra': {'description': "返回模块设置写入结果和更新后的完整目录。"}}
 
     success: bool = True
     data: list[ModuleSettingResponse]
@@ -52,6 +50,5 @@ class ModuleUpdateResponse(BaseModel):
 def normalize_module_payload(
     payload: list[ModuleToggle | dict[str, object]] | ModuleSettingsBody,
 ) -> list[ModuleToggle]:
-    """把列表和 `modules` 包裹结构统一为已验证的模块开关列表。"""
     values = payload.modules if isinstance(payload, ModuleSettingsBody) else payload
     return [item if isinstance(item, ModuleToggle) else ModuleToggle.model_validate(item) for item in values]

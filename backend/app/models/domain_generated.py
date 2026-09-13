@@ -11,17 +11,14 @@ from app.core.types import UTCDateTime
 
 
 def _utc_now() -> datetime:
-    """返回生成模型日期字段使用的 UTC 当前时间。"""
     return datetime.now(timezone.utc)
 
 
 def _uuid_string() -> str:
-    """返回可写入 MySQL 字符串列的 UUID 默认值。"""
     return str(uuid.uuid4())
 
 
 class Host(Base):
-    """保存 Host 领域数据。"""
 
     __tablename__ = 'ops_host'
     ENV_CHOICES = [('prod', '生产'), ('test', '测试'), ('dev', '开发')]
@@ -46,7 +43,6 @@ class Host(Base):
 
 
 class TaskResourceGroup(Base):
-    """保存 TaskResourceGroup 领域数据。"""
 
     __tablename__ = 'ops_taskresourcegroup'
     GROUP_ENVIRONMENT = 'environment'
@@ -69,7 +65,6 @@ class TaskResourceGroup(Base):
 
 
 class TaskResource(Base):
-    """保存 TaskResource 领域数据。"""
 
     __tablename__ = 'ops_taskresource'
     RESOURCE_HOST = 'host'
@@ -103,7 +98,6 @@ class TaskResource(Base):
 
 
 class HostTask(Base):
-    """保存 HostTask 领域数据。"""
 
     __tablename__ = 'ops_hosttask'
     TARGET_HOST = 'host'
@@ -178,7 +172,6 @@ class HostTask(Base):
 
 
 class HostTaskTemplate(Base):
-    """保存 HostTaskTemplate 领域数据。"""
 
     __tablename__ = 'ops_hosttasktemplate'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -197,7 +190,6 @@ class HostTaskTemplate(Base):
 
 
 class HostTaskSchedule(Base):
-    """保存 HostTaskSchedule 领域数据。"""
 
     __tablename__ = 'ops_hosttaskschedule'
     SCHEDULE_TYPE_ONCE = 'once'
@@ -237,7 +229,6 @@ class HostTaskSchedule(Base):
 
 
 class HostTaskScheduleExecution(Base):
-    """保存 HostTaskScheduleExecution 领域数据。"""
 
     __tablename__ = 'ops_hosttaskscheduleexecution'
     TRIGGER_SCHEDULER = 'scheduler'
@@ -261,7 +252,6 @@ class HostTaskScheduleExecution(Base):
 
 
 class HostTaskExecution(Base):
-    """保存 HostTaskExecution 领域数据。"""
 
     __tablename__ = 'ops_hosttaskexecution'
     STATUS_RUNNING = 'running'
@@ -289,7 +279,6 @@ class HostTaskExecution(Base):
 
 
 class Deployment(Base):
-    """保存 Deployment 领域数据。"""
 
     __tablename__ = 'ops_deployment'
     DEPLOY_MODE_CHOICES = [('docker_compose', 'Docker 环境'), ('k8s', 'K8s 集群')]
@@ -349,7 +338,6 @@ class Deployment(Base):
 
 
 class DeploymentApprovalFlow(Base):
-    """保存 DeploymentApprovalFlow 领域数据。"""
 
     __tablename__ = 'ops_deploymentapprovalflow'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -363,7 +351,6 @@ class DeploymentApprovalFlow(Base):
 
 
 class DeploymentApprovalNode(Base):
-    """保存 DeploymentApprovalNode 领域数据。"""
 
     __tablename__ = 'ops_deploymentapprovalnode'
     APPROVER_TYPE_CHOICES = [('user', '指定用户'), ('role', '指定角色'), ('group', '指定用户组')]
@@ -377,7 +364,6 @@ class DeploymentApprovalNode(Base):
 
 
 class DeploymentApprovalStep(Base):
-    """保存 DeploymentApprovalStep 领域数据。"""
 
     __tablename__ = 'ops_deploymentapprovalstep'
     STEP_STATUS_CHOICES = [('pending', '待审批'), ('approved', '已通过'), ('rejected', '已拒绝')]
@@ -400,7 +386,6 @@ class DeploymentApprovalStep(Base):
 
 
 class Alert(Base):
-    """保存 Alert 领域数据。"""
 
     __tablename__ = 'ops_alert'
     SOURCE_PROMETHEUS = 'prometheus'
@@ -469,7 +454,6 @@ class Alert(Base):
 
 
 class AlertClaim(Base):
-    """保存 AlertClaim 领域数据。"""
 
     __tablename__ = 'ops_alertclaim'
     __table_args__ = (
@@ -482,7 +466,6 @@ class AlertClaim(Base):
 
 
 class AlertIntegration(Base):
-    """保存 AlertIntegration 领域数据。"""
 
     __tablename__ = 'ops_alertintegration'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -499,7 +482,6 @@ class AlertIntegration(Base):
 
 
 class AlertRecipient(Base):
-    """保存 AlertRecipient 领域数据。"""
 
     __tablename__ = 'ops_alertrecipient'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -517,7 +499,6 @@ class AlertRecipient(Base):
 
 
 class AlertRecipientGroup(Base):
-    """保存 AlertRecipientGroup 领域数据。"""
 
     __tablename__ = 'ops_alertrecipientgroup'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -529,7 +510,6 @@ class AlertRecipientGroup(Base):
 
 
 class AlertNotificationChannel(Base):
-    """保存 AlertNotificationChannel 领域数据。"""
 
     __tablename__ = 'ops_alertnotificationchannel'
     CHANNEL_SMS = 'sms'
@@ -552,7 +532,6 @@ class AlertNotificationChannel(Base):
 
 
 class AlertAggregationRule(Base):
-    """保存 AlertAggregationRule 领域数据。"""
 
     __tablename__ = 'ops_alertaggregationrule'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -568,7 +547,6 @@ class AlertAggregationRule(Base):
 
 
 class AlertInhibitionRule(Base):
-    """保存 AlertInhibitionRule 领域数据。"""
 
     __tablename__ = 'ops_alertinhibitionrule'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -584,7 +562,6 @@ class AlertInhibitionRule(Base):
 
 
 class AlertMuteRule(Base):
-    """保存 AlertMuteRule 领域数据。"""
 
     __tablename__ = 'ops_alertmuterule'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -600,7 +577,6 @@ class AlertMuteRule(Base):
 
 
 class AlertEscalationPolicy(Base):
-    """保存 AlertEscalationPolicy 领域数据。"""
 
     __tablename__ = 'ops_alertescalationpolicy'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -615,7 +591,6 @@ class AlertEscalationPolicy(Base):
 
 
 class AlertNotificationRule(Base):
-    """保存 AlertNotificationRule 领域数据。"""
 
     __tablename__ = 'ops_alertnotificationrule'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -634,7 +609,6 @@ class AlertNotificationRule(Base):
 
 
 class AlertNotificationLog(Base):
-    """保存 AlertNotificationLog 领域数据。"""
 
     __tablename__ = 'ops_alertnotificationlog'
     STATUS_SUCCESS = 'success'
@@ -655,7 +629,6 @@ class AlertNotificationLog(Base):
 
 
 class AlertAction(Base):
-    """保存 AlertAction 领域数据。"""
 
     __tablename__ = 'ops_alertaction'
     ACTION_WEBHOOK = 'webhook'
@@ -679,7 +652,6 @@ class AlertAction(Base):
 
 
 class AlertInteractionToken(Base):
-    """保存 AlertInteractionToken 领域数据。"""
 
     __tablename__ = 'ops_alertinteractiontoken'
     token: Mapped[str] = mapped_column('token', String(45), nullable=False, unique=False, index=False, primary_key=True, default=_uuid_string)
@@ -693,7 +665,6 @@ class AlertInteractionToken(Base):
 
 
 class LogEntry(Base):
-    """保存 LogEntry 领域数据。"""
 
     __tablename__ = 'ops_logentry'
     LEVEL_CHOICES = [('error', 'ERROR'), ('warning', 'WARNING'), ('info', 'INFO'), ('debug', 'DEBUG')]
@@ -706,7 +677,6 @@ class LogEntry(Base):
 
 
 class LogDataSource(Base):
-    """保存 LogDataSource 领域数据。"""
 
     __tablename__ = 'ops_logdatasource'
     PROVIDER_CHOICES = [('loki', 'Loki'), ('elk', 'ELK / Elasticsearch'), ('sls', '阿里云 SLS')]
@@ -722,7 +692,6 @@ class LogDataSource(Base):
 
 
 class TracingDataSource(Base):
-    """保存 TracingDataSource 领域数据。"""
 
     __tablename__ = 'ops_tracingdatasource'
     PROVIDER_CHOICES = [('skywalking', 'SkyWalking'), ('tempo', 'Tempo / OpenTelemetry'), ('jaeger', 'Jaeger / OpenTelemetry'), ('zipkin', 'Zipkin / OpenTelemetry')]
@@ -738,7 +707,6 @@ class TracingDataSource(Base):
 
 
 class MetricDataSource(Base):
-    """保存 MetricDataSource 领域数据。"""
 
     __tablename__ = 'ops_metricdatasource'
     PROVIDER_PROMETHEUS = 'prometheus'
@@ -761,7 +729,6 @@ class MetricDataSource(Base):
 
 
 class ObservabilityDataSourceLink(Base):
-    """保存 ObservabilityDataSourceLink 领域数据。"""
 
     __tablename__ = 'ops_observabilitydatasourcelink'
     __table_args__ = (
@@ -794,7 +761,6 @@ class ObservabilityDataSourceLink(Base):
 
 
 class GrafanaSetting(Base):
-    """保存 GrafanaSetting 领域数据。"""
 
     __tablename__ = 'ops_grafanasetting'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -810,7 +776,6 @@ class GrafanaSetting(Base):
 
 
 class K8sCluster(Base):
-    """保存 K8sCluster 领域数据。"""
 
     __tablename__ = 'ops_k8scluster'
     STATUS_CHOICES = [('connected', '已连接'), ('disconnected', '未连接'), ('error', '异常')]
@@ -825,7 +790,6 @@ class K8sCluster(Base):
 
 
 class K8sConfigRevision(Base):
-    """保存 K8sConfigRevision 领域数据。"""
 
     __tablename__ = 'ops_k8sconfigrevision'
     ACTION_CHOICES = [('update', 'Update Snapshot'), ('rollback', 'Rollback Snapshot')]
@@ -845,7 +809,6 @@ class K8sConfigRevision(Base):
 
 
 class DockerHost(Base):
-    """保存 DockerHost 领域数据。"""
 
     __tablename__ = 'ops_dockerhost'
     STATUS_CHOICES = [('connected', '已连接'), ('disconnected', '未连接'), ('error', '异常')]
@@ -863,7 +826,6 @@ class DockerHost(Base):
 
 
 class NginxEnvironment(Base):
-    """保存 NginxEnvironment 领域数据。"""
 
     __tablename__ = 'ops_nginxenvironment'
     STATUS_CHOICES = [('connected', '已连接'), ('disconnected', '未连接'), ('error', '异常')]
@@ -881,7 +843,6 @@ class NginxEnvironment(Base):
 
 
 class NginxCertificate(Base):
-    """保存 NginxCertificate 领域数据。"""
 
     __tablename__ = 'ops_nginxcertificate'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -895,7 +856,6 @@ class NginxCertificate(Base):
 
 
 class NginxDomain(Base):
-    """保存 NginxDomain 领域数据。"""
 
     __tablename__ = 'ops_nginxdomain'
     __table_args__ = (
@@ -913,7 +873,6 @@ class NginxDomain(Base):
 
 
 class NginxRoute(Base):
-    """保存 NginxRoute 领域数据。"""
 
     __tablename__ = 'ops_nginxroute'
     __table_args__ = (
@@ -935,7 +894,6 @@ class NginxRoute(Base):
 
 
 class TransactionTicket(Base):
-    """保存 TransactionTicket 领域数据。"""
 
     __tablename__ = 'ops_transactionticket'
     TYPE_CHANGE = 'change'
@@ -971,7 +929,6 @@ class TransactionTicket(Base):
 
 
 class AIOpsModelProvider(Base):
-    """保存 AIOpsModelProvider 领域数据。"""
 
     __tablename__ = 'aiops_modelprovider'
     PROVIDER_OPENAI_COMPATIBLE = 'openai_compatible'
@@ -1002,7 +959,6 @@ class AIOpsModelProvider(Base):
 
 
 class AIOpsAgentConfig(Base):
-    """保存 AIOpsAgentConfig 领域数据。"""
 
     __tablename__ = 'aiops_agentconfig'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -1024,7 +980,6 @@ class AIOpsAgentConfig(Base):
 
 
 class AIOpsMCPServer(Base):
-    """保存 AIOpsMCPServer 领域数据。"""
 
     __tablename__ = 'aiops_mcpserver'
     SERVER_HTTP = 'http'
@@ -1044,7 +999,6 @@ class AIOpsMCPServer(Base):
 
 
 class AIOpsSkill(Base):
-    """保存 AIOpsSkill 领域数据。"""
 
     __tablename__ = 'aiops_skill'
     SOURCE_INLINE = 'inline'
@@ -1075,7 +1029,6 @@ class AIOpsSkill(Base):
 
 
 class AIOpsKnowledgeEnvironment(Base):
-    """保存 AIOpsKnowledgeEnvironment 领域数据。"""
 
     __tablename__ = 'aiops_knowledgeenvironment'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -1105,7 +1058,6 @@ class AIOpsKnowledgeEnvironment(Base):
 
 
 class AIOpsChatSession(Base):
-    """保存 AIOpsChatSession 领域数据。"""
 
     __tablename__ = 'aiops_chatsession'
     STATUS_ACTIVE = 'active'
@@ -1122,7 +1074,6 @@ class AIOpsChatSession(Base):
 
 
 class AIOpsChatMessage(Base):
-    """保存 AIOpsChatMessage 领域数据。"""
 
     __tablename__ = 'aiops_chatmessage'
     ROLE_SYSTEM = 'system'
@@ -1145,7 +1096,6 @@ class AIOpsChatMessage(Base):
 
 
 class AIOpsPendingAction(Base):
-    """保存 AIOpsPendingAction 领域数据。"""
 
     __tablename__ = 'aiops_pendingaction'
     ACTION_EXECUTE_HOST_TASK = 'execute_host_task'
@@ -1175,7 +1125,6 @@ class AIOpsPendingAction(Base):
 
 
 class AIOpsToolInvocation(Base):
-    """保存 AIOpsToolInvocation 领域数据。"""
 
     __tablename__ = 'aiops_toolinvocation'
     STATUS_PENDING = 'pending'
@@ -1193,7 +1142,6 @@ class AIOpsToolInvocation(Base):
 
 
 class AIOpsModelInvocation(Base):
-    """保存 AIOpsModelInvocation 领域数据。"""
 
     __tablename__ = 'aiops_modelinvocation'
     PURPOSE_CHAT_PLANNING = 'chat_planning'
@@ -1224,7 +1172,6 @@ class AIOpsModelInvocation(Base):
 
 
 class AIOpsExternalTask(Base):
-    """保存 AIOpsExternalTask 领域数据。"""
 
     __tablename__ = 'aiops_externaltask'
     STATUS_QUEUED = 'queued'
@@ -1254,7 +1201,6 @@ class AIOpsExternalTask(Base):
 
 
 class AIOpsRunbook(Base):
-    """保存 AIOpsRunbook 领域数据。"""
 
     __tablename__ = 'aiops_runbook'
     STATUS_DRAFT = 'draft'
@@ -1282,7 +1228,6 @@ class AIOpsRunbook(Base):
 
 
 class AIOpsRunbookVersion(Base):
-    """保存 AIOpsRunbookVersion 领域数据。"""
 
     __tablename__ = 'aiops_runbookversion'
     id: Mapped[int] = mapped_column('id', Integer, nullable=False, unique=False, index=False, primary_key=True)
@@ -1300,7 +1245,6 @@ class AIOpsRunbookVersion(Base):
 
 
 class AIOpsReviewKnowledge(Base):
-    """保存 AIOpsReviewKnowledge 领域数据。"""
 
     __tablename__ = 'aiops_reviewknowledge'
     SOURCE_SESSION = 'session'

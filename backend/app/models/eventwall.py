@@ -12,7 +12,6 @@ from app.models.rbac import utc_now
 
 
 class EventRecord(Base):
-    """保存平台请求、任务和系统动作的统一审计事件。"""
 
     __tablename__ = "event_records"
     __table_args__ = (
@@ -56,7 +55,6 @@ class EventRecord(Base):
 
 
 class EventSource(Base):
-    """保存平台内置或外部事件源的接入与健康配置。"""
 
     __tablename__ = "event_sources"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -80,14 +78,12 @@ class EventSource(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
 
     def issue_token(self) -> str:
-        """签发事件源令牌并仅保存摘要与不可还原的预览。"""
         token = secrets.token_urlsafe(32)
         self.token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
         self.token_preview = f"{token[:8]}...{token[-4:]}"
         return token
 
     def verify_token(self, token: str) -> bool:
-        """使用常量时间比较校验事件源原始令牌。"""
         if not self.token_hash or not token:
             return False
         candidate = hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -95,7 +91,6 @@ class EventSource(Base):
 
 
 class EventEnvironment(Base):
-    """保存事件中心标准环境编码及其别名。"""
 
     __tablename__ = "event_environments"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -110,7 +105,6 @@ class EventEnvironment(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
 
     def normalized_aliases(self) -> list[str]:
-        """去除空白、编码和名称重复项，并按首次出现顺序保留别名。"""
         values: list[str] = []
         seen = {self.code.strip().lower(), (self.name or self.code).strip().lower()}
         for item in self.aliases or []:

@@ -1,4 +1,4 @@
-"""处理用户组资料、组角色及成员绑定，不自行提交事务。"""
+# 处理用户组资料、组角色及成员绑定，不自行提交事务。
 
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +9,6 @@ from app.services.rbac_policy import check_users_boundary, protect_builtin, requ
 
 
 async def create_group(session: AsyncSession, actor: User, data: dict) -> UserGroup:
-    """验证角色和成员 ID 后创建用户组并绑定去重关系。"""
     values = dict(data)
     roles = await resolve_ids(session, Role, values.pop("role_ids", []))
     users = await resolve_ids(session, User, values.pop("user_ids", []))
@@ -22,7 +21,6 @@ async def create_group(session: AsyncSession, actor: User, data: dict) -> UserGr
 
 
 async def update_group(session: AsyncSession, actor: User, group_id: int, data: dict) -> UserGroup:
-    """部分修改用户组；显式角色和成员列表替换原集合。"""
     group = await get_group(session, group_id)
     protect_builtin(group, data)
     await require_permission_subset(session, actor, role_codes(group.roles))
@@ -45,7 +43,6 @@ async def update_group(session: AsyncSession, actor: User, group_id: int, data: 
 
 
 async def delete_group(session: AsyncSession, actor: User, group_id: int) -> UserGroup:
-    """删除用户组，通过外键级联解除成员和角色关系。"""
     group = await get_group(session, group_id)
     protect_builtin(group, {}, deleting=True)
     await require_permission_subset(session, actor, role_codes(group.roles))

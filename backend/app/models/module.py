@@ -9,7 +9,6 @@ from app.models.rbac import utc_now
 
 
 class SystemModuleSetting(Base):
-    """保存系统菜单模块的显示开关。"""
 
     __tablename__ = "system_module_settings"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

@@ -9,7 +9,6 @@ from app.models.rbac import group_users, user_roles, utc_now
 
 
 class User(Base):
-    """保存平台本地账号以及管理员状态。"""
 
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -29,12 +28,10 @@ class User(Base):
 
     @property
     def display_name(self) -> str:
-        """优先返回姓名，姓名为空时回退到用户名。"""
         return f"{self.first_name} {self.last_name}".strip() or self.username
 
 
 class AuthToken(Base):
-    """仅保存登录令牌摘要，原始令牌只返回给客户端一次。"""
 
     __tablename__ = "auth_tokens"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

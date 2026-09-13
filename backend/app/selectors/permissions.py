@@ -6,7 +6,6 @@ from app.models.rbac import group_roles, group_users, role_permissions, user_rol
 
 
 async def effective_permission_codes(session: AsyncSession, user: User) -> list[str]:
-    """汇总直属角色和用户组角色权限；超级管理员获得完整权限目录。"""
     if user.is_superuser:
         statement = select(PermissionDefinition.code).order_by(PermissionDefinition.code)
         return list((await session.scalars(statement)).all())
@@ -29,7 +28,6 @@ async def effective_permission_codes(session: AsyncSession, user: User) -> list[
 
 
 async def user_has_permissions(session: AsyncSession, user: User, codes: tuple[str, ...]) -> bool:
-    """判断用户是否拥有全部目标权限；超级管理员直接通过。"""
     if not codes or user.is_superuser:
         return True
     granted = set(await effective_permission_codes(session, user))

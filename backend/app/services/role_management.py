@@ -1,4 +1,4 @@
-"""处理角色资料和权限集合写入，不自行提交事务。"""
+# 处理角色资料和权限集合写入，不自行提交事务。
 
 from sqlalchemy import delete
 from fastapi import HTTPException
@@ -10,7 +10,6 @@ from app.services.rbac_policy import check_users_boundary, protect_builtin, requ
 
 
 async def create_role(session: AsyncSession, actor: User, data: dict) -> Role:
-    """验证权限 ID 后创建自定义角色。"""
     values = dict(data)
     permissions = await resolve_ids(session, PermissionDefinition, values.pop("permission_ids", []))
     await require_permission_subset(session, actor, {permission.code for permission in permissions})
@@ -21,7 +20,6 @@ async def create_role(session: AsyncSession, actor: User, data: dict) -> Role:
 
 
 async def update_role(session: AsyncSession, actor: User, role_id: int, data: dict) -> Role:
-    """部分更新角色并在显式提交权限列表时替换集合。"""
     role = await get_role(session, role_id)
     protect_builtin(role, data)
     if role.is_builtin and not actor.is_superuser:
@@ -41,7 +39,6 @@ async def update_role(session: AsyncSession, actor: User, role_id: int, data: di
 
 
 async def delete_role(session: AsyncSession, actor: User, role_id: int) -> Role:
-    """删除角色并通过外键级联解除用户及用户组关联。"""
     role = await get_role(session, role_id)
     protect_builtin(role, {}, deleting=True)
     await require_permission_subset(session, actor, role_codes([role]))

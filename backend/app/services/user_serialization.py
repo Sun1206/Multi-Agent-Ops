@@ -1,4 +1,4 @@
-"""共享账号响应和批量有效权限构造，避免服务依赖路由。"""
+# 共享账号响应和批量有效权限构造，避免服务依赖路由。
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +9,6 @@ from app.schemas.auth import UserResponse
 
 
 async def permission_map(session: AsyncSession, users: list[User]) -> dict[int, list[str]]:
-    """以固定数量查询汇总整页直属/组权限，超级管理员使用完整目录。"""
     ids = [user.id for user in users]
     result = {user_id: set() for user_id in ids}
     if not ids:
@@ -27,10 +26,8 @@ async def permission_map(session: AsyncSession, users: list[User]) -> dict[int, 
 
 
 def user_response(user: User, permissions: list[str]) -> UserResponse:
-    """将已加载用户转换为兼容响应，不输出密码和内部凭据字段。"""
     return UserResponse(id=user.id, username=user.username, email=user.email, first_name=user.first_name, last_name=user.last_name, is_active=user.is_active, is_staff=user.is_staff, is_superuser=user.is_superuser, date_joined=user.date_joined, last_login=user.last_login, roles=sorted(user.roles, key=lambda item: item.id), user_groups=sorted(user.groups, key=lambda item: item.id), effective_permissions=permissions, display_name=user.display_name, is_demo_account=False)
 
 
 async def serialize_user(session: AsyncSession, user: User) -> UserResponse:
-    """构造单个用户资料，供登录、当前用户及管理详情共同使用。"""
     return user_response(user, (await permission_map(session, [user]))[user.id])

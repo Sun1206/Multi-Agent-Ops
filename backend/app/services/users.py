@@ -1,4 +1,4 @@
-"""处理用户写入和令牌撤销；事务提交由调用方控制。"""
+# 处理用户写入和令牌撤销；事务提交由调用方控制。
 
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,6 @@ from app.core.exceptions import BusinessError
 
 
 async def create_user(session: AsyncSession, actor: User, data: dict) -> User:
-    """验证关系后创建账号、哈希密码，并绑定去重后的角色和组。"""
     values = dict(data)
     await lock_superusers(session)
     protect_identity(actor, None, values)
@@ -27,7 +26,6 @@ async def create_user(session: AsyncSession, actor: User, data: dict) -> User:
 
 
 async def update_user(session: AsyncSession, actor: User, user_id: int, data: dict) -> User:
-    """部分更新用户资料；显式关系列表替换绑定，密码修改或禁用撤销令牌。"""
     admins = await lock_superusers(session)
     user = await get_user(session, user_id, for_update=True)
     protect_identity(actor, user, data)
@@ -55,12 +53,10 @@ async def update_user(session: AsyncSession, actor: User, user_id: int, data: di
 
 
 async def revoke_user_tokens(session: AsyncSession, user_id: int) -> None:
-    """在当前事务中撤销账号全部令牌，不记录原始令牌。"""
     await session.execute(delete(AuthToken).where(AuthToken.user_id == user_id))
 
 
 async def reset_password(session: AsyncSession, actor: User, user_id: int, password: str) -> User:
-    """更新密码哈希并撤销账号所有已有登录令牌。"""
     await lock_superusers(session)
     user = await get_user(session, user_id, for_update=True)
     protect_identity(actor, user, {})
@@ -72,7 +68,6 @@ async def reset_password(session: AsyncSession, actor: User, user_id: int, passw
 
 
 async def delete_user(session: AsyncSession, actor: User, user_id: int) -> User:
-    """删除账号，依赖数据库外键级联清理关系和令牌但保留审计历史。"""
     admins = await lock_superusers(session)
     user = await get_user(session, user_id, for_update=True)
     protect_identity(actor, user, {})

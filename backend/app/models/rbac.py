@@ -8,7 +8,6 @@ from app.core.types import UTCDateTime
 
 
 def utc_now() -> datetime:
-    """返回带 UTC 时区的当前时间，供模型默认值复用。"""
     return datetime.now(timezone.utc)
 
 
@@ -39,7 +38,6 @@ group_users = Table(
 
 
 class PermissionDefinition(Base):
-    """保存可授予角色的稳定权限编码。"""
 
     __tablename__ = "permissions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -55,7 +53,6 @@ class PermissionDefinition(Base):
 
 
 class Role(Base):
-    """把一组权限绑定给用户或用户组。"""
 
     __tablename__ = "roles"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -71,7 +68,6 @@ class Role(Base):
 
 
 class UserGroup(Base):
-    """通过组角色批量向成员授予权限。"""
 
     __tablename__ = "user_groups"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

@@ -14,9 +14,8 @@ from app.services.rbac import sync_rbac
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
 
-@router.post("/login/", response_model=LoginResponse)
+@router.post("/login/", response_model=LoginResponse, description="公开验证账号并返回不透明 Token 和用户资料。")
 async def login(payload: LoginRequest, session: SessionDependency) -> LoginResponse:
-    """POST /api/auth/login/：公开验证账号并返回不透明 Token 和用户资料。"""
     await sync_rbac(session)
     user = await authenticate_credentials(session, payload.username, payload.password)
     if user is None:
@@ -27,26 +26,23 @@ async def login(payload: LoginRequest, session: SessionDependency) -> LoginRespo
     return response
 
 
-@router.post("/logout/", response_model=SuccessResponse)
+@router.post("/logout/", response_model=SuccessResponse, description="认证用户撤销当前 Token 并立即退出。")
 async def logout(session: SessionDependency, auth: AuthDependency) -> SuccessResponse:
-    """POST /api/auth/logout/：认证用户撤销当前 Token 并立即退出。"""
     await revoke_token(session, auth.raw_token)
     await session.commit()
     return SuccessResponse()
 
 
-@router.get("/me/", response_model=UserResponse)
+@router.get("/me/", response_model=UserResponse, description="认证用户读取资料和实时有效权限。")
 async def current_user(session: SessionDependency, auth: AuthDependency) -> UserResponse:
-    """GET /api/auth/me/：认证用户读取资料和实时有效权限。"""
     return await serialize_user(session, auth.user)
 
 
-@router.post("/sync/", response_model=SyncResponse)
+@router.post("/sync/", response_model=SyncResponse, description="有权限用户幂等同步内置权限与角色目录。")
 async def sync_permissions(
     session: SessionDependency,
     user: Annotated[User, Depends(require_permissions("rbac.permission.view"))],
 ) -> SyncResponse:
-    """POST /api/auth/sync/：有权限用户幂等同步内置权限与角色目录。"""
     await sync_rbac(session)
     await session.commit()
     return SyncResponse(message="内置权限与角色已同步。")

@@ -8,7 +8,6 @@ from app.services.rbac import sync_rbac
 
 
 async def bootstrap_data() -> bool:
-    """在一个事务中同步权限、模块和显式配置的 admin 超级管理员。"""
     settings = get_settings()
     engine = create_engine(settings)
     factory = create_session_factory(engine)
@@ -32,7 +31,6 @@ async def bootstrap_data() -> bool:
 
 
 async def main() -> None:
-    """执行确定性初始化并输出不包含密码或令牌的结果。"""
     admin_configured = await bootstrap_data()
     print("权限与模块已同步。")
     print("admin 已创建或升级。" if admin_configured else "未配置 admin 初始密码，已跳过账号初始化。")
