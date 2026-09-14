@@ -18,6 +18,7 @@ from app.api.routers.chat import router as chat_router
 from app.core.config import get_settings
 from app.core.database import create_engine, create_session_factory
 from app.core.exceptions import register_exception_handlers
+from app.services.chat_jobs import ChatJobs, recover_interrupted
 
 
 logger = logging.getLogger(__name__)
@@ -28,18 +29,24 @@ def create_app(*, initialize_database: bool = True) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         if not initialize_database:
-            yield
+            try:
+                yield
+            finally:
+                await application.state.chat_jobs.close()
             return
         settings = get_settings()
         engine = create_engine(settings)
         application.state.engine = engine
         application.state.session_factory = create_session_factory(engine)
         try:
+            await recover_interrupted(application.state.session_factory)
             yield
         finally:
+            await application.state.chat_jobs.close()
             await engine.dispose()
 
     application = FastAPI(title="AI Ops API", version="1.0.0", lifespan=lifespan)
+    application.state.chat_jobs = ChatJobs(application)
     register_exception_handlers(application)
     application.add_middleware(
         CORSMiddleware,

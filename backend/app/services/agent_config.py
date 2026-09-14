@@ -1,6 +1,7 @@
 # 实施配置变更、关联校验和同事务审计，不承载任何运行执行逻辑。
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import Request
@@ -59,6 +60,13 @@ async def mutate_resource(session: AsyncSession, kind: str, values: dict, identi
         connection_fields = {'base_url', 'default_model', 'backup_model', 'api_key_encrypted', 'provider_type', 'is_enabled', 'timeout_seconds', 'temperature', 'max_tokens'}
         if item and any(name in values and values[name] != getattr(item, name) for name in connection_fields):
             values.update(last_test_status='unknown', last_test_message='')
+        if item and any(name in values and values[name] != getattr(item, name) for name in values):
+            # MySQL现有时间列只保留整秒；配置修改至少推进一秒，避免改动后还原被误判为未改。
+            # 诊断保存不推进此标记；实际诊断发生时间由审计记录，不修改已应用迁移。
+            previous = item.updated_at
+            if previous.tzinfo is None:
+                previous = previous.replace(tzinfo=timezone.utc)
+            values['updated_at'] = max(datetime.now(timezone.utc).replace(microsecond=0), previous + timedelta(seconds=1))
     if item and getattr(item, 'is_builtin', False):
         if any(name in values and values[name] != getattr(item, name) for name in stable):
             raise BusinessError('内置对象的稳定标识和来源不可修改。')

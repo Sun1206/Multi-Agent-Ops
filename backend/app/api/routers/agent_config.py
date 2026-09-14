@@ -1,8 +1,9 @@
-# 装配智能体配置管理接口，仅保存声明，不调用外部运行服务。
+# 装配配置管理和用户显式触发的模型诊断接口，不启动MCP或执行工具。
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
+from fastapi.responses import JSONResponse
 
 from app.agent_registry import CATALOG, action_catalog
 from app.api.dependencies import SessionDependency, require_permissions
@@ -11,6 +12,8 @@ from app.schemas.agent_config import CloneRequest, McpCreate, McpPatch, Provider
 from app.selectors.agent_config import get_resource, list_resources, marketplace_response, resource_response, strategy_response
 from app.selectors.permissions import user_has_permissions
 from app.services.agent_config import audit_config, clone_skill, mutate_resource, mutate_strategy, remove_resource
+from app.schemas.provider_runtime import ConnectionResult, ModelCatalogResult
+from app.services.provider_runtime import diagnose_provider
 
 
 router = APIRouter(prefix='/api/aiops/admin', tags=['智能体配置'])
@@ -54,6 +57,22 @@ async def post_clone(identifier: int, body: CloneRequest, request: Request, sess
     await audit_config(session, request, actor, 'clone_skill', 'aiops_skill', item.id, ['source_skill_id'])
     await session.commit()
     return resource_response('skills', item)
+
+
+# 使用管理权限触发固定短文本探测；成功200、远端诊断失败400，秘密不回显。
+@router.post('/providers/{identifier}/test_connection/', response_model=ConnectionResult, description='测试已保存提供商的文本连接，并原子保存安全诊断状态和审计。')
+async def test_provider_connection(identifier: int, request: Request, session: SessionDependency, actor: ConfigManager):
+    result, status = await diagnose_provider(identifier, request, session, actor, connection=True)
+    return JSONResponse(status_code=status, content=result)
+
+
+# probe默认true兼容旧页面；false只读供应商目录。GET仍需管理权限并记录审计。
+@router.get('/providers/{identifier}/models/', response_model=ModelCatalogResult, description='获取模型目录并可选验证文本及工具声明能力，不执行工具或保存推荐模型。')
+async def get_provider_models(identifier: int, request: Request, session: SessionDependency, actor: ConfigManager, probe: bool = True):
+    result, status = await diagnose_provider(identifier, request, session, actor, probe=probe)
+    if status != 200:
+        return JSONResponse(status_code=status, content=result)
+    return result
 
 
 def register_resource_routes(kind: str, create_model, patch_model) -> None:

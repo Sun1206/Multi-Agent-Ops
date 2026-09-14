@@ -71,3 +71,15 @@ class CreateSessionInput(BaseModel):
     @classmethod
     def strip_title(cls, value):
         return value.strip() if isinstance(value, str) else value
+
+
+class ChatInput(BaseModel):
+    model_config = ConfigDict(extra='ignore', allow_inf_nan=False)
+    content: str = Field(min_length=1, max_length=4000)
+    analysis_only: bool = False
+    page_context: Any = Field(default_factory=dict)
+
+    @field_validator('content', mode='before')
+    @classmethod
+    def strip_content(cls, value):
+        return value.strip() if isinstance(value, str) else value

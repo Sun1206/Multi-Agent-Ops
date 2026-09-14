@@ -1,5 +1,6 @@
 # 智能助手旧会话接口，前端调用协议保持不变。
 
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -7,7 +8,8 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import SessionDependency, require_permissions
 from app.models import AIOpsChatMessage, AIOpsChatSession, User
-from app.schemas.chat import CreateSessionInput
+from app.schemas.chat import ChatInput, CreateSessionInput, normalize_page_context
+from app.services.chat_jobs import WORKER_TAG, now, update_result
 from app.selectors.chat import get_owned_session, latest_messages, message_response, session_response
 from app.services.chat import audit_chat, create_chat_session, delete_chat_session
 from app.agent_registry import action_catalog
@@ -64,7 +66,80 @@ async def get_messages(identifier: int, session: SessionDependency, actor: ChatU
 @router.post('/sessions/{identifier}/delete_session/', status_code=204, description="兼容旧POST删除及DELETE入口，与删除审计在同一事务完成。")
 @router.delete('/sessions/{identifier}/', status_code=204, description="兼容旧POST删除及DELETE入口，与删除审计在同一事务完成。")
 async def delete_session(identifier: int, request: Request, session: SessionDependency, actor: ChatUser):
-    await delete_chat_session(session, actor, identifier)
-    await audit_chat(session, request, actor, 'delete_session', identifier)
-    await session.commit()
+    jobs = request.app.state.chat_jobs
+    async with jobs.submission(identifier):
+        await delete_chat_session(session, actor, identifier)
+        await audit_chat(session, request, actor, 'delete_session', identifier)
+        await session.commit()
+        await jobs.cancel_session(identifier)
     return Response(status_code=204)
+
+
+async def prepare_submission(identifier, body, request, session, actor):
+    chat = await get_owned_session(session, actor.id, identifier, lock=True)
+    if actor.username == 'demo':
+        raise HTTPException(status_code=403, detail='演示账号不能发起对话。')
+    jobs = request.app.state.chat_jobs
+    jobs.reserve()
+    started = False
+    try:
+        context = normalize_page_context(body.page_context)
+        if context:
+            chat.context = {**(chat.context if isinstance(chat.context, dict) else {}), 'page_context': context}
+        user_message = AIOpsChatMessage(session_id=identifier, role='user', content=body.content, metadata_data={'analysis_only': body.analysis_only, 'page_context': context})
+        assistant_message = AIOpsChatMessage(session_id=identifier, role='assistant', content='正在生成回复，请稍等。', metadata_data={'processing_status': 'pending', 'processing_text': '请求已提交，正在排队处理', 'analysis_only': body.analysis_only, 'page_context': context, 'processing_steps': [{'title': '排队中', 'status': 'pending', 'timestamp': now().isoformat()}], 'tool_events': [], 'worker_tag': WORKER_TAG})
+        session.add_all([user_message, assistant_message])
+        chat.last_message_at = now()
+        if chat.title == '新会话':
+            chat.title = body.content[:48] or '新会话'
+        await session.flush()
+        await audit_chat(session, request, actor, 'send_message', identifier)
+        commit_task = asyncio.create_task(session.commit())
+        try:
+            await asyncio.shield(commit_task)
+        except asyncio.CancelledError:
+            # Finish the commit before releasing the request session; a committed placeholder needs a terminal state.
+            try:
+                await commit_task
+                await update_result(request.app.state.session_factory, identifier, assistant_message.id, actor.id, 'failed', '提交请求已中断，请重新提交。')
+            finally:
+                raise
+        response = {'user_message': message_response(user_message), 'assistant_message': message_response(assistant_message), 'pending_action': None}
+        try:
+            task = jobs.start(identifier, user_message.id, assistant_message.id, actor.id)
+        except Exception:
+            await update_result(request.app.state.session_factory, identifier, assistant_message.id, actor.id, 'failed', '对话调度失败，请重新提交。')
+            raise HTTPException(status_code=503, detail='对话调度暂不可用，请稍后重试。') from None
+        started = True
+        return response, task
+    finally:
+        if not started:
+            jobs.release()
+
+
+async def submit_message(identifier, body, request, session, actor, synchronous):
+    async with request.app.state.chat_jobs.submission(identifier):
+        response, task = await prepare_submission(identifier, body, request, session, actor)
+    if synchronous:
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            if not task.cancelled():
+                raise
+            await get_owned_session(session, actor.id, identifier)
+            raise HTTPException(status_code=503, detail='对话请求已中断，请重新提交。') from None
+        message = await session.get(AIOpsChatMessage, response['assistant_message']['id'], populate_existing=True)
+        if message is None:
+            raise HTTPException(status_code=404, detail='会话已被删除。')
+        response['assistant_message'] = message_response(message)
+    return response
+
+
+@router.post('/sessions/{identifier}/send_message_async/', status_code=201, description='提交对话请求，由后台处理并通过历史消息接口轮询结果。')
+async def send_message_async(identifier: int, body: ChatInput, request: Request, session: SessionDependency, actor: ChatUser):
+    return await submit_message(identifier, body, request, session, actor, False)
+
+
+@router.post('/sessions/{identifier}/send_message/', status_code=201, description='兼容同步对话入口，等待模型处理完成后返回消息。')
+async def send_message(identifier: int, body: ChatInput, request: Request, session: SessionDependency, actor: ChatUser):
+    return await submit_message(identifier, body, request, session, actor, True)
