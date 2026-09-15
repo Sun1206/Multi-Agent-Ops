@@ -14,6 +14,7 @@ from app.selectors.permissions import user_has_permissions
 from app.services.agent_config import audit_config, clone_skill, mutate_resource, mutate_strategy, remove_resource
 from app.schemas.provider_runtime import ConnectionResult, ModelCatalogResult
 from app.services.provider_runtime import diagnose_provider
+from app.services.mcp_runtime import diagnose_mcp
 
 
 router = APIRouter(prefix='/api/aiops/admin', tags=['智能体配置'])
@@ -73,6 +74,20 @@ async def get_provider_models(identifier: int, request: Request, session: Sessio
     if status != 200:
         return JSONResponse(status_code=status, content=result)
     return result
+
+
+# 管理权限触发HTTP握手；不启动STDIO、不把平台声明误报成可执行连接。
+@router.post('/mcp-servers/{identifier}/test_connection/', description='测试HTTP MCP握手并记录安全审计，不执行工具或启动子进程。')
+async def test_mcp_connection(identifier: int, request: Request, session: SessionDependency, actor: ConfigManager):
+    payload, status = await diagnose_mcp(identifier, request, session, actor)
+    return JSONResponse(status_code=status, content=payload)
+
+
+# 复用HTTP握手查询有界工具目录，返回旧页面tools/count/diagnostics结构。
+@router.get('/mcp-servers/{identifier}/list_tools/', description='发现HTTP MCP工具声明并应用白名单与只读过滤，不调用工具或修改配置。')
+async def get_mcp_tools(identifier: int, request: Request, session: SessionDependency, actor: ConfigManager):
+    payload, status = await diagnose_mcp(identifier, request, session, actor, tools=True)
+    return JSONResponse(status_code=status, content=payload)
 
 
 def register_resource_routes(kind: str, create_model, patch_model) -> None:

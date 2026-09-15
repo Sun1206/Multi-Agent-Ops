@@ -15,6 +15,7 @@ from app.api.routers.permissions import router as permissions_router
 from app.api.routers.events import router as events_router
 from app.api.routers.agent_config import router as agent_config_router
 from app.api.routers.chat import router as chat_router
+from app.api.routers.alerts import router as alerts_router
 from app.core.config import get_settings
 from app.core.database import create_engine, create_session_factory
 from app.core.exceptions import register_exception_handlers
@@ -77,6 +78,7 @@ def create_app(*, initialize_database: bool = True) -> FastAPI:
     application.include_router(events_router)
     application.include_router(agent_config_router)
     application.include_router(chat_router)
+    application.include_router(alerts_router)
     return application
 
 
