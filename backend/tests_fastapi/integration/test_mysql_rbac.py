@@ -9,14 +9,14 @@ import pytest_asyncio
 from sqlalchemy import delete, func, inspect, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.core.config import Settings
-from app.core.database import Base
-from app.core.exceptions import BusinessError
-from app.core.security import hash_password
-from app.models import AuthToken, User
-from app.services.users import update_user
-from app.services.users import reset_password
-from app.services.accounts import authenticate_credentials, issue_token
+from aidevops.config import Settings
+from aidevops.database import Base
+from aidevops.exceptions import BusinessError
+from aidevops.security import hash_password
+from rbac.models import AuthToken, User
+from rbac.services.users import update_user
+from rbac.services.users import reset_password
+from rbac.services.accounts import authenticate_credentials, issue_token
 
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.skipif(os.environ.get("AIOPS_RUN_MYSQL_TESTS") != "1", reason="需要显式启用独立 MySQL 测试库")]

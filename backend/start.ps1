@@ -17,7 +17,7 @@ if (-not (Test-Path -LiteralPath $environmentFile)) {
     throw '未找到 backend/.env，请复制 .env.example 并填写本机数据库配置。'
 }
 
-$serverArguments = @('-m', 'uvicorn', 'app.main:app', '--host', $BindAddress, '--port', "$Port")
+$serverArguments = @('-m', 'uvicorn', 'aidevops.main:app', '--host', $BindAddress, '--port', "$Port")
 if (-not $NoReload) {
     $serverArguments += '--reload'
 }

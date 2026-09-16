@@ -1,5 +1,5 @@
-from app import models
-from app.core.database import Base
+from aidevops import model_registry as models
+from aidevops.database import Base
 
 
 EXPECTED_EVENTWALL = {"EventRecord", "EventSource", "EventEnvironment"}

@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime, timezone
 from pydantic import ValidationError
 
-from app.schemas.auth import UserResponse
-from app.schemas.module import ModuleSettingsBody, normalize_module_payload
+from rbac.schemas.auth import UserResponse
+from ops.modules.schemas import ModuleSettingsBody, normalize_module_payload
 
 
 def test_demo_compatibility_flag_is_always_false() -> None:

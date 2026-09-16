@@ -5,10 +5,12 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.core.config import get_settings
-from app.core.database import Base
-from app import models  # noqa: F401  导入全部映射以填充 Base.metadata
+from aidevops.config import get_settings
+from aidevops.database import Base
+from aidevops.database import load_domain_models
 
+
+load_domain_models()
 
 config = context.config
 if config.config_file_name is not None:

@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.dialects import mysql
 
-from app.core.security import hash_password
-from app.models import User
-from app.services.accounts import authenticate_credentials
+from aidevops.security import hash_password
+from rbac.models import User
+from rbac.services.accounts import authenticate_credentials
 
 
 @pytest.mark.asyncio

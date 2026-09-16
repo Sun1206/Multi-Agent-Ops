@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from aidevops.config import Settings
 
 
 def make_settings(**overrides: object) -> Settings:

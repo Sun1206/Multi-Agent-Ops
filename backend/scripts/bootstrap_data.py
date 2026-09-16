@@ -1,10 +1,10 @@
 import asyncio
 
-from app.core.config import get_settings
-from app.core.database import create_engine, create_session_factory
-from app.services.accounts import ensure_admin
-from app.services.modules import sync_modules
-from app.services.rbac import sync_rbac
+from aidevops.config import get_settings
+from aidevops.database import create_engine, create_session_factory
+from rbac.services.accounts import ensure_admin
+from ops.modules.services import sync_modules
+from rbac.services.authorization import sync_rbac
 
 
 async def bootstrap_data() -> bool:

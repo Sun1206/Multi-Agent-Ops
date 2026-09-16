@@ -1,4 +1,4 @@
-from app.core.security import digest_token, generate_token, hash_password, verify_password
+from aidevops.security import digest_token, generate_token, hash_password, verify_password
 
 
 def test_password_hash_uses_argon2id() -> None:

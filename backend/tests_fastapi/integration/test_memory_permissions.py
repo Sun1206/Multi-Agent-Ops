@@ -1,11 +1,11 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.dependencies import AuthContext, get_auth_context
-from app.core.database import get_session
-from app.main import create_app
-from app.models import PermissionDefinition, Role, User, UserGroup
-from app.selectors.permissions import effective_permission_codes, user_has_permissions
+from aidevops.dependencies import AuthContext, get_auth_context
+from aidevops.database import get_session
+from aidevops.main import create_app
+from rbac.models import PermissionDefinition, Role, User, UserGroup
+from rbac.selectors.permissions import effective_permission_codes, user_has_permissions
 
 
 @pytest.mark.asyncio

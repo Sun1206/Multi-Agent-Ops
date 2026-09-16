@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy import func, select
 
-from app.models import AuthToken, EventRecord, User
-from app.core.security import verify_password
+from eventwall.models import EventRecord
+from rbac.models import AuthToken, User
+from aidevops.security import verify_password
 from tests_fastapi.integration.test_rbac_reads import rbac_client
 
 

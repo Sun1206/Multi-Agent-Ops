@@ -2,9 +2,10 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import func, select
 
-from app.core.security import hash_password
-from app.models import EventRecord, PermissionDefinition, Role, User, UserGroup
-from app.services.accounts import issue_token
+from aidevops.security import hash_password
+from eventwall.models import EventRecord
+from rbac.models import PermissionDefinition, Role, User, UserGroup
+from rbac.services.accounts import issue_token
 from tests_fastapi.integration.test_rbac_reads import rbac_client
 
 
@@ -109,7 +110,7 @@ async def test_builtin_role_and_group_code_and_delete_are_protected(rbac_client,
 
 @pytest.mark.asyncio
 async def test_audit_failure_rolls_back_business_write(rbac_client, monkeypatch):
-    from app.api import audit
+    from rbac.audit import api as audit
     client, headers, app = rbac_client
     async def fail(*args, **kwargs):
         raise RuntimeError("deliberate audit failure")

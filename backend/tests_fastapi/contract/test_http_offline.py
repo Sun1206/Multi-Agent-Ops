@@ -4,11 +4,11 @@ from types import SimpleNamespace
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.dependencies import AuthContext, get_auth_context
-from app.core.database import get_session
-from app.main import create_app
-from app.models import User
-from app.schemas.auth import UserResponse
+from aidevops.dependencies import AuthContext, get_auth_context
+from aidevops.database import get_session
+from aidevops.main import create_app
+from rbac.models import User
+from rbac.schemas.auth import UserResponse
 
 
 class FakeSession:
@@ -43,7 +43,7 @@ def user_response() -> UserResponse:
 
 @pytest.mark.asyncio
 async def test_login_keeps_token_and_user_response(monkeypatch: pytest.MonkeyPatch) -> None:
-    from app.api.routers import auth as auth_router
+    from rbac.api import auth as auth_router
 
     app = create_app(initialize_database=False)
     fake_session = FakeSession()
@@ -90,8 +90,8 @@ async def test_module_update_accepts_both_payload_shapes(
     method: str,
     payload: object,
 ) -> None:
-    from app.api import dependencies
-    from app.api.routers import module_settings
+    from aidevops import dependencies
+    from ops.modules import api as module_settings
 
     app = create_app(initialize_database=False)
     fake_session = FakeSession()

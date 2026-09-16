@@ -1,4 +1,4 @@
-from app.services.events import sanitize_metadata
+from eventwall.services import sanitize_metadata
 
 
 def test_recursive_sensitive_values_are_redacted() -> None:

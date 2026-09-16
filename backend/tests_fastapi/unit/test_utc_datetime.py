@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.dialects import mysql
 
-from app.core.types import UTCDateTime, ensure_utc
+from aidevops.types import UTCDateTime, ensure_utc
 
 
 def test_mysql_bind_normalizes_to_naive_utc_and_reload_restores_timezone() -> None:

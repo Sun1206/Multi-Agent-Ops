@@ -4,10 +4,10 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.main import create_app
-from app.models import User
-from app.services.accounts import ensure_admin, issue_token
-from app.services.rbac import sync_rbac
+from aidevops.main import create_app
+from rbac.models import User
+from rbac.services.accounts import ensure_admin, issue_token
+from rbac.services.authorization import sync_rbac
 
 
 @pytest_asyncio.fixture

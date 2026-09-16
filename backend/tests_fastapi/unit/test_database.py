@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
-from app.core.database import create_engine, create_session_factory
+from aidevops.config import Settings
+from aidevops.database import create_engine, create_session_factory
 
 
 def make_settings(**overrides: object) -> Settings:

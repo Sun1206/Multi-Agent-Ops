@@ -1,4 +1,4 @@
-from app.registry import BUILTIN_ROLES, PERMISSION_DEFINITIONS
+from rbac.registry import BUILTIN_ROLES, PERMISSION_DEFINITIONS
 
 
 def test_registry_keeps_complete_unique_permission_codes() -> None:

@@ -2,11 +2,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 
-from app.api.dependencies import AuthContext, get_auth_context
-from app.core.database import get_session
-from app.main import create_app
-from app.models import EventRecord, User
-from app.services.modules import sync_modules
+from aidevops.dependencies import AuthContext, get_auth_context
+from aidevops.database import get_session
+from aidevops.main import create_app
+from eventwall.models import EventRecord
+from rbac.models import User
+from ops.modules.services import sync_modules
 
 
 @pytest.mark.asyncio

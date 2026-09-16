@@ -5,8 +5,8 @@ from pathlib import Path
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-from app import models
-from app.core.database import Base
+from aidevops import model_registry as models
+from aidevops.database import Base
 
 
 def test_aiops_models_have_only_one_prefix() -> None:

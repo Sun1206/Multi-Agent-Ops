@@ -1,8 +1,8 @@
 from sqlalchemy.dialects import mysql
 from sqlalchemy.schema import CreateTable
 
-from app import models  # noqa: F401
-from app.core.database import Base
+from aidevops import model_registry as models  # noqa: F401
+from aidevops.database import Base
 
 
 def test_every_table_compiles_for_mysql_8() -> None:

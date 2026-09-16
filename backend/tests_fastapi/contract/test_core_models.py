@@ -1,6 +1,8 @@
 from sqlalchemy import inspect
 
-from app.models import EventRecord, SystemModuleSetting, User
+from ops.modules.models import SystemModuleSetting
+from eventwall.models import EventRecord
+from rbac.models import User
 
 
 def test_auth_and_module_columns_preserve_contract() -> None:

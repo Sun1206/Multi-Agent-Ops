@@ -3,7 +3,7 @@ import re
 
 import asyncmy
 
-from app.core.config import Settings
+from aidevops.config import Settings
 
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")

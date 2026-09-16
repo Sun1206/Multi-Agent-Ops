@@ -5,12 +5,14 @@ from pathlib import Path
 from sqlalchemy.dialects import mysql
 from sqlalchemy.schema import CreateIndex, CreateTable
 
-from app import models  # noqa: F401
-from app.core.database import Base
+from aidevops.database import load_domain_models
+from aidevops.database import Base
 
 
 OUTPUT = Path(__file__).resolve().parents[1] / "alembic" / "versions" / "0001_fastapi_initial.py"
 
+
+load_domain_models()
 
 def render_migration() -> str:
     dialect = mysql.dialect()
