@@ -9,6 +9,7 @@ from ops.alerts.api import router as alerts_router
 from ops.alerts.config_api import router as alert_config_router
 from ops.modules.api import router as module_router
 from ops.observability.metrics.api import router as metrics_router
+from ops.observability.logs.api import router as logs_router
 from rbac.api.auth import router as auth_router
 from rbac.api.groups import router as groups_router
 from rbac.api.permissions import router as permissions_router
@@ -29,6 +30,7 @@ ROUTERS = (
     alerts_router,
     alert_config_router,
     metrics_router,
+    logs_router,
 )
 
 
