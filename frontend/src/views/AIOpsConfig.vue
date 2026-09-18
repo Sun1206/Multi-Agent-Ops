@@ -298,7 +298,9 @@
         </div>
         <el-table :data="providers" stripe class="console-table">
           <el-table-column prop="name" label="名称" min-width="180" />
-          <el-table-column prop="provider_type" label="类型" width="150" />
+          <el-table-column label="类型" width="150">
+            <template #default="{ row }">{{ formatProviderType(row.provider_type) }}</template>
+          </el-table-column>
           <el-table-column prop="base_url" label="Base URL" min-width="220" show-overflow-tooltip />
           <el-table-column prop="default_model" label="默认模型" width="160" />
           <el-table-column label="计费" width="96">
@@ -542,7 +544,15 @@
     <el-dialog v-model="providerDialogVisible" :title="providerForm.id ? '编辑提供商' : '新增提供商'" width="min(880px, 94vw)" destroy-on-close append-to-body>
       <el-form :model="providerForm" label-width="102px">
         <el-form-item label="名称"><el-input v-model="providerForm.name" /></el-form-item>
-        <el-form-item label="类型"><el-select v-model="providerForm.provider_type" style="width:100%"><el-option label="OpenAI Compatible" value="openai_compatible" /></el-select></el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="providerForm.provider_type" style="width:100%">
+            <el-option label="OpenAI Compatible" value="openai_compatible" />
+            <el-option label="DeepSeek" value="deepseek" />
+            <el-option label="千问" value="qwen" />
+            <el-option label="智谱" value="zhipu" />
+            <el-option label="Kimi" value="kimi" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="供应商预设">
           <el-select v-model="providerForm.provider_preset" filterable clearable placeholder="选择 DeepSeek / 豆包 / 千问 / Kimi 等预设" style="width:100%" @change="applyProviderPreset">
             <el-option v-for="item in providerPresets" :key="item.key" :label="item.name" :value="item.key">
@@ -1342,6 +1352,16 @@ function currencySymbol(currency) {
 
 function formatProviderCurrency(currency) {
   return String(currency || '').toUpperCase() === 'CNY' ? '人民币' : '美元'
+}
+
+function formatProviderType(providerType) {
+  return {
+    openai_compatible: 'OpenAI Compatible',
+    deepseek: 'DeepSeek',
+    qwen: '千问',
+    zhipu: '智谱',
+    kimi: 'Kimi',
+  }[providerType] || providerType || '-'
 }
 
 function providerOptionLabel(provider = {}) {
@@ -3139,6 +3159,5 @@ onMounted(async () => {
   }
 }
 </style>
-
 
 

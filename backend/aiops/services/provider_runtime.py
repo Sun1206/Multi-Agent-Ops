@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import update
 
 from aiops.models import AIOpsModelProvider
+from aiops.provider_types import OPENAI_COMPATIBLE_PROVIDER_TYPES
 from rbac.models import User
 from aidevops import restricted_http as model_client
 from aiops.services.agent_config import lock_strategies
@@ -34,7 +35,7 @@ async def read_snapshot(factory, identifier):
     async with factory() as database:
         provider = await get_resource(database, 'providers', identifier)
         state = snapshot(provider)
-    if not state['is_enabled'] or state['provider_type'] != 'openai_compatible' or not state['base_url']:
+    if not state['is_enabled'] or state['provider_type'] not in OPENAI_COMPATIBLE_PROVIDER_TYPES or not state['base_url']:
         raise HTTPException(status_code=400, detail='提供商未启用或连接配置不完整。')
     try:
         key = config_cipher().decrypt(state['api_key_encrypted'].encode()).decode()

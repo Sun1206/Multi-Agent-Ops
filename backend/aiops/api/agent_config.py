@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse
 
-from aiops.agent_registry import CATALOG, action_catalog
+from aiops.agent_registry import action_catalog, provider_presets
 from aidevops.dependencies import SessionDependency, require_permissions
 from rbac.models import User
 from aiops.schemas.agent_config import CloneRequest, McpCreate, McpPatch, ProviderCreate, ProviderPatch, SkillCreate, SkillPatch, StrategyPatch
@@ -43,7 +43,7 @@ async def get_actions(actor: ConfigViewer):
 
 @router.get('/providers/presets/', description="输出静态供应商填表预设，不保证模型当前支持情况或发起探测。")
 async def get_presets(actor: ConfigViewer):
-    return {'presets': CATALOG['MODEL_PROVIDER_PRESETS']}
+    return {'presets': provider_presets()}
 
 
 @router.get('/skills/marketplace/', description="输出本地 Skill 能力包目录及当前用户的编辑/克隆提示。")

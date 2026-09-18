@@ -4,8 +4,17 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
+from aiops.provider_types import PRESET_PROVIDER_TYPES
+
 
 CATALOG = json.loads((Path(__file__).parent / 'catalog' / 'agent_config.json').read_text(encoding='utf-8'))
+
+
+def provider_presets() -> list[dict]:
+    presets = deepcopy(CATALOG['MODEL_PROVIDER_PRESETS'])
+    for preset in presets:
+        preset['provider_type'] = PRESET_PROVIDER_TYPES.get(preset['key'], preset['provider_type'])
+    return presets
 
 
 def action_catalog() -> dict:

@@ -6,6 +6,8 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
+from aiops.provider_types import ProviderType
+
 
 Name = Annotated[str, Field(min_length=1, max_length=128)]
 TextItem = Annotated[str, Field(min_length=1, max_length=255)]
@@ -41,7 +43,7 @@ class ProviderPatch(ConfigInput):
     model_config = {'json_schema_extra': {'description': "接收提供商可写参数，不允许直接提交密文。"}}
 
     name: Name = ''
-    provider_type: Literal['openai_compatible'] = 'openai_compatible'
+    provider_type: ProviderType = 'openai_compatible'
     base_url: str = Field(default='', max_length=255)
     provider_preset: str = Field(default='', max_length=64)
     api_key: SecretStr = SecretStr('')
