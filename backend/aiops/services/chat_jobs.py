@@ -4,6 +4,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from time import perf_counter
 
 from cryptography.fernet import InvalidToken
 from fastapi import HTTPException
@@ -11,6 +12,7 @@ from dotenv import dotenv_values
 from sqlalchemy import select
 
 from aiops.models import AIOpsAgentConfig, AIOpsChatMessage, AIOpsChatSession, AIOpsModelProvider
+from aiops.services.model_invocations import model_invocation
 from rbac.models import User
 from aiops.schemas.chat import normalize_page_context
 from aidevops import restricted_http as model_client
@@ -22,7 +24,7 @@ from rbac.selectors.permissions import user_has_permissions
 
 logger = logging.getLogger(__name__)
 WORKER_TAG = 'ordinary_chat_v1'
-PROVIDER_FIELDS = ('id', 'base_url', 'default_model', 'api_key_encrypted', 'provider_type', 'is_enabled', 'timeout_seconds', 'temperature', 'max_tokens')
+PROVIDER_FIELDS = ('id', 'name', 'base_url', 'default_model', 'api_key_encrypted', 'provider_type', 'is_enabled', 'timeout_seconds', 'temperature', 'max_tokens', 'price_currency', 'input_token_price_per_1m', 'output_token_price_per_1m')
 CONFIG_FIELDS = ('default_provider_id', 'system_prompt', 'is_enabled', 'max_history_messages')
 
 
@@ -74,10 +76,10 @@ async def prepare_request(factory, session_id, user_message_id, user_id):
     if not isinstance(allowed, list) or any(not isinstance(item, str) for item in allowed):
         raise model_client.ModelRequestError('服务端模型地址准入配置不合法。')
     target = model_client.validate_origin(provider_state['base_url'], allowed)
-    return config_state, provider_state, target, key, payload
+    return config_state, provider_state, target, key, payload, actor.username
 
 
-async def update_result(factory, session_id, assistant_id, user_id, status, content, expected=None):
+async def update_result(factory, session_id, assistant_id, user_id, status, content, expected=None, invocation_values=None):
     async with factory() as database:
         config = await database.scalar(select(AIOpsAgentConfig).where(AIOpsAgentConfig.name == 'default').with_for_update().execution_options(populate_existing=True))
         provider = await database.get(AIOpsModelProvider, config.default_provider_id, with_for_update=True) if config and config.default_provider_id else None
@@ -95,6 +97,8 @@ async def update_result(factory, session_id, assistant_id, user_id, status, cont
         message.message_type = 'error' if status == 'failed' else 'text'
         if status in ('completed', 'failed'):
             chat.last_message_at = now()
+            if invocation_values is not None:
+                database.add(model_invocation(**invocation_values))
             await record_event(database, actor=actor, method='POST', path=f'/api/aiops/sessions/{session_id}/send_message_async/', ip_address='', correlation_id=f'aiops-chat-message:{assistant_id}', action='complete_chat' if status == 'completed' else 'fail_chat', title='智能助手对话处理', resource_type='aiops_chat_session', resource_id=str(session_id), metadata={'message_id': assistant_id, 'result': status}, module='aiops', category='chat')
         await database.commit()
 
@@ -152,19 +156,47 @@ class ChatJobs:
 
     async def run(self, previous, session_id, user_message_id, assistant_id, user_id):
         factory = self.application.state.session_factory
+        config = provider = result = invocation = None
+        started = None
         try:
             if previous:
                 await asyncio.shield(previous)
             await update_result(factory, session_id, assistant_id, user_id, 'running', '正在生成回复，请稍等。')
-            config, provider, target, key, payload = await prepare_request(factory, session_id, user_message_id, user_id)
-            content = await model_client.request_text(target, key, payload, provider['timeout_seconds'])
-            await update_result(factory, session_id, assistant_id, user_id, 'completed', content, (config, provider))
+            config, provider, target, key, payload, username = await prepare_request(factory, session_id, user_message_id, user_id)
+            request_summary = {
+                'message_count': len(payload['messages']),
+                'content_length': sum(len(message.get('content', '')) for message in payload['messages']),
+            }
+            started = perf_counter()
+            result = await model_client.request_completion(target, key, payload, provider['timeout_seconds'])
+            latency_ms = round((perf_counter() - started) * 1000)
+            content = model_client.text_content(result).replace(key, '***')
+            invocation = {
+                'provider': provider, 'session_id': session_id, 'message_id': assistant_id,
+                'username': username, 'latency_ms': latency_ms, 'result': result,
+                'status': 'success', 'termination': 'completed', 'request_summary': request_summary,
+            }
+            await update_result(factory, session_id, assistant_id, user_id, 'completed', content, (config, provider), invocation)
         except asyncio.CancelledError:
-            await update_result(factory, session_id, assistant_id, user_id, 'failed', '对话请求已中断，请重新提交。')
+            if started is not None and invocation is None:
+                invocation = {
+                    'provider': provider, 'session_id': session_id, 'message_id': assistant_id,
+                    'username': username, 'latency_ms': round((perf_counter() - started) * 1000),
+                    'result': result, 'status': 'failed', 'termination': 'cancelled',
+                    'request_summary': request_summary,
+                }
+            await update_result(factory, session_id, assistant_id, user_id, 'failed', '对话请求已中断，请重新提交。', (config, provider) if config and provider else None, invocation)
             raise
         except Exception:
             try:
-                await update_result(factory, session_id, assistant_id, user_id, 'failed', '模型不可用或请求失败，请检查默认模型与服务端配置后重试。')
+                if started is not None and invocation is None:
+                    invocation = {
+                        'provider': provider, 'session_id': session_id, 'message_id': assistant_id,
+                        'username': username, 'latency_ms': round((perf_counter() - started) * 1000),
+                        'result': result, 'status': 'failed', 'termination': 'failure',
+                        'request_summary': request_summary,
+                    }
+                await update_result(factory, session_id, assistant_id, user_id, 'failed', '模型不可用或请求失败，请检查默认模型与服务端配置后重试。', (config, provider) if config and provider else None, invocation)
             except Exception:
                 logger.error('对话终态保存失败 message_id=%s', assistant_id)
 

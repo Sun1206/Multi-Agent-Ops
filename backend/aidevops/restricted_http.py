@@ -149,6 +149,13 @@ def text_content(result):
     return content.strip()
 
 
-async def request_text(target: ModelTarget, api_key: str, payload: dict, timeout_seconds: float, *, transport: httpx.AsyncBaseTransport | None = None) -> str:
+async def request_completion(target: ModelTarget, api_key: str, payload: dict, timeout_seconds: float, *, transport: httpx.AsyncBaseTransport | None = None) -> dict:
     result = await request_json(target, api_key, 'POST', '/chat/completions', {**payload, 'stream': False}, timeout_seconds, transport=transport)
+    if not isinstance(result, dict):
+        raise ModelRequestError('模型未返回有效响应。')
+    return result
+
+
+async def request_text(target: ModelTarget, api_key: str, payload: dict, timeout_seconds: float, *, transport: httpx.AsyncBaseTransport | None = None) -> str:
+    result = await request_completion(target, api_key, payload, timeout_seconds, transport=transport)
     return text_content(result).replace(api_key, '***')

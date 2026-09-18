@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from aiops.api.agent_config import router as agent_config_router
+from aiops.api.audit import router as audit_router
 from aiops.api.chat import router as chat_router
 from eventwall.api import router as events_router
 from ops.alerts.api import router as alerts_router
@@ -26,6 +27,7 @@ ROUTERS = (
     permissions_router,
     events_router,
     agent_config_router,
+    audit_router,
     chat_router,
     alerts_router,
     alert_config_router,
