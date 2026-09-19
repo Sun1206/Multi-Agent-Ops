@@ -21,6 +21,7 @@ from aidevops.config_secrets import ENVELOPE, config_cipher
 from eventwall.services import record_event
 from aiops.services.mcp_http import HttpMcpSession
 from aiops.services.mcp_tools import McpError, project_tools, public_data
+from aiops.tools.manifest import platform_tool_declarations
 
 
 CONFIG_FIELDS = ('name', 'server_type', 'endpoint_or_command', 'auth_config', 'tool_whitelist', 'is_enabled', 'updated_at')
@@ -148,9 +149,33 @@ async def diagnose_mcp(identifier, request, session, actor, *, tools=False):
         config['id'] = identifier
     if not config['is_enabled'] or not config['endpoint_or_command']:
         raise HTTPException(status_code=400, detail='MCP未启用或连接地址未配置。')
-    if config['server_type'] != 'http':
-        raise HTTPException(status_code=400, detail='当前仅支持HTTP MCP诊断，STDIO及平台内置执行尚未接入。')
-    payload, status, count = await probe_http(config, tools=tools)
+    if tools and config['server_type'] == AIOpsMCPServer.SERVER_PLATFORM_BUILTIN:
+        whitelist = {
+            name
+            for name in config['tool_whitelist']
+            if isinstance(name, str)
+        } if isinstance(config['tool_whitelist'], list) else set()
+        rows = [
+            item
+            for item in platform_tool_declarations()
+            if item['name'] in whitelist
+        ]
+        payload = {
+            'tools': rows,
+            'count': len(rows),
+            'diagnostics': [{
+                'server_id': identifier,
+                'name': config['name'],
+                'status': 'connected',
+                'tool_count': len(rows),
+                'message': '平台内置只读工具目录已加载，未执行工具。',
+            }],
+        }
+        status, count = 200, 0
+    elif config['server_type'] != 'http':
+        raise HTTPException(status_code=400, detail='当前仅支持HTTP MCP诊断，STDIO执行尚未接入。')
+    else:
+        payload, status, count = await probe_http(config, tools=tools)
     async with factory() as database:
         await lock_strategies(database)
         current = await database.get(AIOpsMCPServer, identifier, with_for_update=True, populate_existing=True)

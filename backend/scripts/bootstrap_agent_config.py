@@ -1,4 +1,4 @@
-# 显式填充智能体配置目录，不重置管理员或覆盖已有配置。
+# 显式同步内置智能体配置目录，不重置管理员或覆盖自定义配置。
 
 import asyncio
 
@@ -17,7 +17,7 @@ async def main() -> None:
             except Exception:
                 await session.rollback()
                 raise
-        print('智能体配置目录已补齐；未修改已有内容或管理员密码。')
+        print('内置智能体配置目录已同步；未修改自定义配置或管理员密码。')
     finally:
         await engine.dispose()
 

@@ -1,6 +1,7 @@
 import asyncio
 import ipaddress
 import json
+import re
 import socket
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -26,6 +27,20 @@ class ModelTarget:
     host: str
     port: int
     internal_allowed: bool
+
+
+@dataclass(frozen=True)
+class ParsedToolCall:
+    identifier: str
+    name: str
+    arguments: dict[str, object]
+
+
+@dataclass(frozen=True)
+class ParsedCompletion:
+    content: str | None
+    tool_calls: tuple[ParsedToolCall, ...]
+    assistant_message: dict[str, object]
 
 
 def validate_origin(base_url: str, allowed_origins: list[str]) -> ModelTarget:
@@ -139,14 +154,70 @@ async def request_json(target: ModelTarget, api_key: str, method: str, suffix: s
         raise ModelRequestError('模型地址或服务响应不可用，请检查配置。') from None
 
 
-# 普通聊天仅提取非空正文，忽略工具声明，不把响应中的凭据回显给用户。
-def text_content(result):
+# 严格解析第一条模型响应，只保留文本或标准化后的 function tool calls。
+def parse_completion_choice(result: dict) -> ParsedCompletion:
     choices = result.get('choices') if isinstance(result, dict) else None
-    message = choices[0].get('message') if isinstance(choices, list) and choices and isinstance(choices[0], dict) else None
-    content = message.get('content') if isinstance(message, dict) else None
-    if not isinstance(content, str) or not content.strip() or len(content) > 50000:
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise ModelRequestError('模型未返回有效回答。')
+    message = choices[0].get('message')
+    if not isinstance(message, dict):
+        raise ModelRequestError('模型未返回有效回答。')
+    raw_calls = message.get('tool_calls', [])
+    if raw_calls is None:
+        raw_calls = []
+    if not isinstance(raw_calls, list) or len(raw_calls) > 4:
+        raise ModelRequestError('模型返回的工具调用数量无效。')
+    calls = []
+    normalized_calls = []
+    identifiers = set()
+    for raw in raw_calls:
+        function = raw.get('function') if isinstance(raw, dict) else None
+        identifier = raw.get('id') if isinstance(raw, dict) else None
+        name = function.get('name') if isinstance(function, dict) else None
+        encoded = function.get('arguments') if isinstance(function, dict) else None
+        if (
+            not isinstance(raw, dict)
+            or raw.get('type') != 'function'
+            or not isinstance(identifier, str)
+            or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', identifier)
+            or identifier in identifiers
+        ):
+            raise ModelRequestError('模型返回的工具调用标识无效。')
+        if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', name):
+            raise ModelRequestError('模型返回的工具名称无效。')
+        if not isinstance(encoded, str) or len(encoded.encode('utf-8')) > 32768:
+            raise ModelRequestError('模型返回的工具参数无效。')
+        try:
+            arguments = json.loads(encoded)
+        except (TypeError, ValueError) as error:
+            raise ModelRequestError('模型返回的工具参数不是有效 JSON。') from error
+        if not isinstance(arguments, dict):
+            raise ModelRequestError('模型返回的工具参数必须是对象。')
+        identifiers.add(identifier)
+        calls.append(ParsedToolCall(identifier, name, arguments))
+        normalized_calls.append({
+            'id': identifier,
+            'type': 'function',
+            'function': {'name': name, 'arguments': encoded},
+        })
+    content = message.get('content')
+    if calls:
+        content = None
+    elif not isinstance(content, str) or not content.strip() or len(content) > 50000:
         raise ModelRequestError('模型未返回有效文本回答。')
-    return content.strip()
+    return ParsedCompletion(
+        content.strip() if isinstance(content, str) else None,
+        tuple(calls),
+        {'role': 'assistant', 'content': content, 'tool_calls': normalized_calls},
+    )
+
+
+# 普通聊天只接受非空正文，工具调用由专用运行时处理。
+def text_content(result):
+    parsed = parse_completion_choice(result)
+    if parsed.content is None:
+        raise ModelRequestError('模型返回了工具调用而不是文本回答。')
+    return parsed.content
 
 
 async def request_completion(target: ModelTarget, api_key: str, payload: dict, timeout_seconds: float, *, transport: httpx.AsyncBaseTransport | None = None) -> dict:

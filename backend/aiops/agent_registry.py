@@ -27,3 +27,8 @@ def action_catalog() -> dict:
         summary[risk] = sum(item['risk_level'] == risk for item in actions)
     summary['preflight_required'] = sum(bool(item.get('preflight_required')) for item in actions)
     return {'actions': actions, 'summary': summary}
+
+
+# 返回运行时可用于白名单计算的原始 Action 定义副本。
+def action_definitions() -> list[dict]:
+    return deepcopy(CATALOG['BUILTIN_ACTION_REGISTRY'])

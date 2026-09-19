@@ -13,6 +13,10 @@ from aidevops.exceptions import BusinessError
 from aiops.models import AIOpsAgentConfig, AIOpsMCPServer, AIOpsModelProvider, AIOpsSkill
 from rbac.models import Role, User
 from aiops.selectors.agent_config import RESOURCE_MODELS, get_resource, provider_hint
+from aiops.tools.manifest import (
+    PLATFORM_MCP_ENDPOINT,
+    platform_server_definitions,
+)
 from aidevops.config_secrets import encrypt_secret, transform_auth
 from eventwall.services import record_event
 
@@ -145,6 +149,40 @@ async def bootstrap_agent_catalog(session: AsyncSession) -> None:
     for definition in CATALOG['BUILTIN_SKILLS']:
         if await session.scalar(select(AIOpsSkill.id).where(AIOpsSkill.slug == definition['slug'])) is None:
             session.add(AIOpsSkill(**deepcopy(definition), is_builtin=True))
-    if await session.scalar(select(AIOpsMCPServer.id).where(AIOpsMCPServer.name == '平台只读工具目录')) is None:
-        session.add(AIOpsMCPServer(name='平台只读工具目录', server_type='platform_builtin', endpoint_or_command='platform://readonly', description='仅声明平台能力，运行服务尚未接入。', is_builtin=True, is_enabled=False))
+    platform_rows = list(
+        (
+            await session.scalars(
+                select(AIOpsMCPServer)
+                .where(
+                    AIOpsMCPServer.server_type
+                    == AIOpsMCPServer.SERVER_PLATFORM_BUILTIN,
+                    AIOpsMCPServer.is_builtin.is_(True),
+                )
+                .order_by(AIOpsMCPServer.id)
+            )
+        ).all()
+    )
+    by_tool = {
+        row.tool_whitelist[0]: row
+        for row in platform_rows
+        if isinstance(row.tool_whitelist, list) and len(row.tool_whitelist) == 1
+    }
+    legacy = next(
+        (
+            row
+            for row in platform_rows
+            if row.endpoint_or_command == PLATFORM_MCP_ENDPOINT
+        ),
+        None,
+    )
+    for values in platform_server_definitions():
+        tool_name = values['tool_whitelist'][0]
+        row = by_tool.get(tool_name)
+        if row is None and tool_name == 'query_alerts':
+            row = legacy
+        if row is None:
+            session.add(AIOpsMCPServer(**values))
+        else:
+            for field, value in values.items():
+                setattr(row, field, value)
     await session.flush()

@@ -15,11 +15,19 @@ from aiops.services.agent_config import audit_config, clone_skill, mutate_resour
 from aiops.schemas.provider_runtime import ConnectionResult, ModelCatalogResult
 from aiops.services.provider_runtime import diagnose_provider
 from aiops.services.mcp_runtime import diagnose_mcp
+from aiops.tools.manifest import platform_manifest
 
 
 router = APIRouter(prefix='/api/aiops/admin', tags=['智能体配置'])
+manifest_router = APIRouter(prefix='/api/aiops', tags=['智能体配置'])
 ConfigViewer = Annotated[User, Depends(require_permissions('aiops.config.view'))]
 ConfigManager = Annotated[User, Depends(require_permissions('aiops.config.manage'))]
+
+
+# 返回前端平台能力面板使用的只读工具声明，不执行任何工具或外部请求。
+@manifest_router.get('/mcp/manifest/', description='读取平台内置只读工具清单，仅声明能力而不执行工具。')
+async def get_platform_mcp_manifest(actor: ConfigViewer):
+    return platform_manifest()
 
 
 @router.get('/config/', description="读取默认策略，未初始化时返回无副作用默认值。")

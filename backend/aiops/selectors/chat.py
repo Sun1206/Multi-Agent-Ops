@@ -20,9 +20,17 @@ async def get_owned_session(session: AsyncSession, user_id: int, identifier: int
 
 def message_response(item: AIOpsChatMessage) -> dict:
     source = item.metadata_data if isinstance(item.metadata_data, dict) else {}
-    permitted = {'analysis_only', 'page_context', 'processing_status', 'processing_text', 'processing_steps', 'execution_mode', 'error_code'}
+    permitted = {'analysis_only', 'page_context', 'processing_status', 'processing_text', 'processing_steps', 'execution_mode', 'error_code', 'action_code'}
     metadata = sanitize_metadata({name: value for name, value in source.items() if name in permitted})
-    return {'id': item.id, 'role': item.role, 'message_type': item.message_type, 'content': item.content, 'citations': [], 'tool_calls': [], 'metadata': metadata, 'blocks': [], 'pending_action': None, 'created_at': item.created_at}
+    raw_calls = item.tool_calls if isinstance(item.tool_calls, list) else []
+    tool_calls = []
+    for value in raw_calls[:20]:
+        if not isinstance(value, dict):
+            continue
+        identifier, name, status = value.get('id'), value.get('name'), value.get('status')
+        if isinstance(identifier, str) and isinstance(name, str) and status in {'success', 'failed'}:
+            tool_calls.append({'id': identifier[:128], 'name': name[:64], 'status': status})
+    return {'id': item.id, 'role': item.role, 'message_type': item.message_type, 'content': item.content, 'citations': [], 'tool_calls': tool_calls, 'metadata': metadata, 'blocks': [], 'pending_action': None, 'created_at': item.created_at}
 
 
 def session_response(item: AIOpsChatSession, latest: AIOpsChatMessage | None = None) -> dict:
