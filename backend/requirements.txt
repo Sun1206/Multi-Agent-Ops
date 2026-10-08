@@ -15,3 +15,4 @@ aiosqlite>=0.21,<1.0
 cryptography>=46,<47
 aliyun-log-python-sdk>=0.9.48,<0.10
 requests>=2.32,<3.0
+regex>=2024.11.6,<2027

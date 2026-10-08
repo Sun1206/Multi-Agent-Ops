@@ -85,7 +85,7 @@ async def delete_alert(identifier: int, request: Request, session: SessionDepend
     return Response(status_code=204)
 
 
-# 装配已实现的人工动作；没有注册升级或通知发送的假成功路径。
+# 装配人工状态动作和升级动作，通知发送由持久化队列处理。
 def register_action(action, schema):
     # 先获取行锁并执行动作，投影结果和记录准备完成后只提交一次事务。
     async def mutate(identifier: int, body: schema, request: Request, session: SessionDependency, actor: AlertManager):
@@ -94,10 +94,10 @@ def register_action(action, schema):
         await session.commit()
         return result
     mutate.__name__ = 'alert_' + action
-    router.add_api_route('/alerts/{identifier}/' + action + '/', mutate, methods=['POST'], description={'acknowledge': '确认告警，确认与认领保持独立。', 'claim': '当前账号认领告警，支持多人并存与重复认领保护。', 'unclaim': '仅取消当前账号自己的认领，不影响其他处理人。', 'mute': '按指定分钟数手动屏蔽告警，并记录到期时间。', 'resolve': '标记告警已恢复并保存恢复时间。', 'close': '人工关闭告警并保存关闭时间。', 'reopen': '重新打开告警，取消确认和抑制标记，保留认领历史。'}[action])
+    router.add_api_route('/alerts/{identifier}/' + action + '/', mutate, methods=['POST'], description={'acknowledge': '确认告警，确认与认领保持独立。', 'claim': '当前账号认领告警，支持多人并存与重复认领保护。', 'unclaim': '仅取消当前账号自己的认领，不影响其他处理人。', 'mute': '按指定分钟数手动屏蔽告警，并记录到期时间。', 'resolve': '标记告警已恢复并保存恢复时间。', 'close': '人工关闭告警并保存关闭时间。', 'reopen': '重新打开告警，取消确认和抑制标记，保留认领历史。', 'escalate': '提高告警升级级别，并排队发送升级通知。'}[action])
 
 
-for action in ('acknowledge', 'claim', 'unclaim', 'mute', 'resolve', 'close', 'reopen'):
+for action in ('acknowledge', 'claim', 'unclaim', 'mute', 'resolve', 'close', 'reopen', 'escalate'):
     register_action(action, AlertMuteRequest if action == 'mute' else AlertActionRequest)
 
 

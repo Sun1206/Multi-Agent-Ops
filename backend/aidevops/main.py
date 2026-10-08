@@ -11,6 +11,7 @@ from aidevops.database import create_engine, create_session_factory
 from aidevops.exceptions import register_exception_handlers
 from aidevops.routes import register_routes
 from aiops.services.chat_jobs import ChatJobs, recover_interrupted
+from ops.alerts.notification_jobs import AlertNotificationJobs
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ def create_app(*, initialize_database: bool = True) -> FastAPI:
             try:
                 yield
             finally:
+                await application.state.alert_notification_jobs.close()
                 await application.state.chat_jobs.close()
             return
         settings = get_settings()
@@ -32,13 +34,16 @@ def create_app(*, initialize_database: bool = True) -> FastAPI:
         application.state.session_factory = create_session_factory(engine)
         try:
             await recover_interrupted(application.state.session_factory)
+            application.state.alert_notification_jobs.start()
             yield
         finally:
+            await application.state.alert_notification_jobs.close()
             await application.state.chat_jobs.close()
             await engine.dispose()
 
     application = FastAPI(title="AI Ops API", version="1.0.0", lifespan=lifespan)
     application.state.chat_jobs = ChatJobs(application)
+    application.state.alert_notification_jobs = AlertNotificationJobs(application)
     register_exception_handlers(application)
     application.add_middleware(
         CORSMiddleware,

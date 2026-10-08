@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Literal, NamedTuple
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 
 class ResolvedAuditRange(NamedTuple):
@@ -36,3 +36,43 @@ class AuditRange(BaseModel):
         end = self.end.astimezone(timezone.utc) if self.end else (now or datetime.now(timezone.utc))
         start = self.start.astimezone(timezone.utc) if self.start else end - timedelta(days=self.days or 7)
         return ResolvedAuditRange(start, end)
+
+
+# 明细默认查询全部历史；分页、文本长度及自定义时间沿用页面传参约定。
+class AuditListFilters(BaseModel):
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)
+    q: str = Field(default='', max_length=256)
+    username: str = Field(default='', max_length=64)
+    status: str = Field(default='', max_length=32)
+    risk_level: str = Field(default='', max_length=32)
+    purpose: str = Field(default='', max_length=32)
+    start: datetime | None = None
+    end: datetime | None = None
+
+    # 校验成对时间和最大跨度，统一以带时区的时间进行比较。
+    @model_validator(mode='after')
+    def validate_time(self):
+        AuditRange(start=self.start, end=self.end)
+        return self
+
+
+# 批量清理每次只接受一种明确的目标列表，禁止空列表或无限批量请求。
+class AuditDeleteInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    session_ids: list[StrictInt] | None = Field(default=None, min_length=1, max_length=100)
+    invocation_ids: list[StrictInt] | None = Field(default=None, min_length=1, max_length=100)
+    action_ids: list[StrictInt] | None = Field(default=None, min_length=1, max_length=100)
+    trace_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
+
+    # 数字主键必须为正数；具体列表名称和路径类型由服务层进一步匹配。
+    @model_validator(mode='after')
+    def validate_identifiers(self):
+        fields = [value for value in (self.session_ids, self.invocation_ids, self.action_ids, self.trace_ids) if value is not None]
+        if len(fields) != 1:
+            raise ValueError('必须且只能提供一种目标列表。')
+        if any(value <= 0 for values in (self.session_ids, self.invocation_ids, self.action_ids) if values for value in values):
+            raise ValueError('记录编号必须为正整数。')
+        if self.trace_ids and any(len(value) > 100 for value in self.trace_ids):
+            raise ValueError('命中记录编号过长。')
+        return self

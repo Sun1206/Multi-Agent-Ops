@@ -347,7 +347,7 @@ async def finalize_metric_operation(
 
 
 # 执行 PromQL 查询，统一默认时间、结果结构、摘要和安全审计。
-async def execute_metric_query(factory, actor_id: int, request, body: MetricQuery) -> dict[str, object]:
+async def execute_metric_query(factory, actor_id: int, request, body: MetricQuery, *, required_permission: str = "ops.metric.query", action: str = "query_metrics") -> dict[str, object]:
     snapshot = await read_metric_snapshot(factory, body.metric_datasource_id, body.environment, actor_id)
     started = time.perf_counter()
     now = datetime.now(timezone.utc)
@@ -367,8 +367,8 @@ async def execute_metric_query(factory, actor_id: int, request, body: MetricQuer
             factory,
             snapshot,
             request,
-            required_permission="ops.metric.query",
-            action="query_metrics",
+            required_permission=required_permission,
+            action=action,
             metadata={
                 "query_length": len(body.promql),
                 "query_type": "range" if body.range_query else "instant",
@@ -383,8 +383,8 @@ async def execute_metric_query(factory, actor_id: int, request, body: MetricQuer
         factory,
         snapshot,
         request,
-        required_permission="ops.metric.query",
-        action="query_metrics",
+        required_permission=required_permission,
+        action=action,
         metadata={
             "query_length": len(body.promql),
             "query_type": "range" if body.range_query else "instant",

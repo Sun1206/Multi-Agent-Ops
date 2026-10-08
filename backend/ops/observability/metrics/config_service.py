@@ -152,6 +152,11 @@ def normalize_metric_config(
             },
         }
     )
+    # Grafana专用令牌沿用指标凭据的加密、掩码保留和清空语义，不在JSON中保存新明文。
+    if 'grafana_api_token' in output:
+        old_token = old.get('grafana_api_token')
+        token_value = value['grafana_api_token'] if 'grafana_api_token' in value else ('***' if old_token not in (None, '') else '')
+        output['grafana_api_token'] = protect_secret(token_value, old_token, trusted=trusted)
     return output
 
 

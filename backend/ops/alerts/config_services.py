@@ -192,6 +192,9 @@ async def save_resource(session, request, actor, kind, submitted, identifier=Non
         value = values[name]
         column = {'user': 'user_id', 'aggregation_rule': 'aggregation_rule_id', 'escalation_policy': 'escalation_policy_id'}.get(name, name)
         if kind == 'alert-notification-channels' and name == 'config':
+            # PATCH未提交config时直接保留服务端密文，不能把旧密文当作客户端新输入再次加密。
+            if identifier is not None and 'config' not in submitted:
+                continue
             old = item.config if identifier is not None else None
             value = protect_channel_config(value, old)
         setattr(item, column, value)

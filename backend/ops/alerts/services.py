@@ -66,6 +66,10 @@ async def apply_action(session, request, actor, identifier, action, body):
         item.muted_by, item.muted_reason = actor.username, body.note or f'屏蔽 {body.minutes} 分钟'
     elif action == 'resolve':
         item.status, item.ends_at = 'resolved', now
+    elif action == 'escalate':
+        if item.escalation_level >= 10000:
+            raise HTTPException(400, '告警升级级别超限。')
+        item.escalation_level, item.escalated_at = item.escalation_level + 1, now
     elif action == 'close':
         item.status, item.closed_at = 'closed', now
     elif action == 'reopen':
@@ -77,4 +81,8 @@ async def apply_action(session, request, actor, identifier, action, body):
     session.add(AlertAction(alert_id=identifier, action=action, actor=actor.username, note=body.note, metadata_data={}))
     await session.flush()
     await audit_alert(session, request, actor, action, identifier)
+    if action in {'escalate', 'resolve'}:
+        from ops.alerts.notification_queue import enqueue
+        from ops.alerts.escalation_runtime import escalation_channels
+        await enqueue(session, item, 'escalation' if action == 'escalate' else 'resolved', force=action == 'escalate', actor_id=actor.id, channel_override=await escalation_channels(session, item) if action == 'escalate' else None)
     return item

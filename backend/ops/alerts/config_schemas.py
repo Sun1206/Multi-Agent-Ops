@@ -2,6 +2,7 @@
 
 import json
 import math
+import regex
 from datetime import datetime
 from typing import Annotated, Any, ClassVar, Literal
 
@@ -81,6 +82,18 @@ class Matcher(BaseModel):
         if any(isinstance(item, float) and not math.isfinite(item) for item in values):
             raise ValueError('匹配值不能包含非有限数字。')
         return value
+
+    # 在保存规则时先编译正则，阻止语法错误规则进入接收运行流程。
+    @model_validator(mode='after')
+    def compile_regex(self):
+        if self.op in {'=~', '!~'}:
+            if not isinstance(self.value, str):
+                raise ValueError('正则匹配值必须是字符串。')
+            try:
+                regex.compile(self.value)
+            except regex.error:
+                raise ValueError('告警规则正则语法无效。') from None
+        return self
 
 
 # 告警来源配置由服务端生成接收令牌，客户端只维护业务属性。
